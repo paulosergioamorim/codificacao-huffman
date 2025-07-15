@@ -15,3 +15,5 @@ void FreeQueue(Queue *queue);
 void PrintQueue(Queue *queue);
 
 int ExistsQueue(Queue *queue, int key);
+
+Tree *ToHuffmanTree(Queue *queue);

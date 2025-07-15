@@ -1,4 +1,5 @@
 #include "queue.h"
+#include "bitmap.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -12,31 +13,41 @@ int main(int argc, char const *argv[])
     for (int i = 0; i < strlen(str); i++)
     {
         char c = str[i];
-        int count = CountCharStr(str, c);
+        int frequency = CountCharStr(str, c);
 
         if (!ExistsQueue(queue, c))
-            Enqueue(queue, CreateTree(c, count));
+            Enqueue(queue, CreateTree(c, frequency, NULL, NULL));
     }
 
-    Tree *huffmanTree = NULL;
+    Tree *huffmanTree = ToHuffmanTree(queue);
+    FILE *pFile = fopen("compact.bin", "wb+");
+    bitmap *huffmanTreeBm = EncodeHuffmanTree(huffmanTree);
 
-    while (1)
+    bitmap *contentBm = bitmapInit(strlen(str) * GetHeightTree(huffmanTree));
+
+    if (!pFile)
     {
-        Tree *tree1 = Dequeue(queue);
-        Tree *tree2 = Dequeue(queue);
-
-        if (!tree1 || !tree2)
-            break;
-
-        huffmanTree = CreateTree(0, GetWeigthTree(tree1) + GetWeigthTree(tree2));
-        SetLeftTree(huffmanTree, tree1);
-        SetRightTree(huffmanTree, tree2);
-        Enqueue(queue, huffmanTree);
+        return 0;
     }
 
-    PrintTree(huffmanTree);
-    printf("\n");
-    FreeQueue(queue);
+    for (int i = 0; i < strlen(str); i++)
+    {
+        bitmap *charBm = EncodeCharHuffmanTree(huffmanTree, str[i]);
+
+        for (int i = 0; i < bitmapGetLength(charBm); i++)
+        {
+            bitmapAppendLeastSignificantBit(contentBm, bitmapGetBit(charBm, i));
+        }
+
+        bitmapLibera(charBm);
+    }
+
+    fwrite(bitmapGetContents(huffmanTreeBm), sizeof(char), (bitmapGetLength(huffmanTreeBm) + 7) / 8, pFile);
+    // fwrite(bitmapGetContents(contentBm), sizeof(char), (bitmapGetLength(contentBm) + 7) / 8, pFile);
+    bitmapLibera(huffmanTreeBm);
+    bitmapLibera(contentBm);
+    fclose(pFile);
+
     FreeTree(huffmanTree);
 
     return 0;

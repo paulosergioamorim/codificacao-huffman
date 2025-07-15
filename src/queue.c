@@ -7,7 +7,6 @@
 typedef struct node
 {
     Tree *value;
-    struct node *prev;
     struct node *next;
 } Node;
 
@@ -16,6 +15,8 @@ struct queue
     Node *first;
     Node *last;
 };
+
+static Node *CreateNode(Tree *tree);
 
 Queue *CreateQueue()
 {
@@ -29,10 +30,9 @@ Queue *CreateQueue()
 void Enqueue(Queue *queue, Tree *tree)
 {
     assert(queue);
-    Node *node = malloc(sizeof(Node));
-    assert(node);
-    node->value = tree;
-    node->next = node->prev = NULL;
+    Node *node = CreateNode(tree);
+    Node *prev = NULL;
+    Node *cur = queue->first;
 
     if (!queue->first)
     {
@@ -40,35 +40,34 @@ void Enqueue(Queue *queue, Tree *tree)
         return;
     }
 
-    int weigth = GetWeigthTree(tree);
+    int frequency = GetFrequencyTree(tree);
 
-    Node *cur = queue->first;
-
-    while (cur && weigth >= GetWeigthTree(cur->value))
+    while (cur && frequency >= GetFrequencyTree(cur->value))
     {
+        prev = cur;
         cur = cur->next;
     }
 
-    if (!cur)
+    if (!prev)
     {
-        node->prev = queue->last;
-        queue->last->next = node;
-        queue->last = node;
-        return;
-    }
-
-    if (!cur->prev)
-    {
-        cur->prev = node;
-        node->next = cur;
+        node->next = queue->first;
         queue->first = node;
+
+        if (!queue->last)
+            queue->last = node;
+
         return;
     }
 
-    node->prev = cur->prev;
-    node->next = cur;
-    cur->prev->next = node;
-    cur->prev = node;
+    if (cur)
+    {
+        prev->next = node;
+        node->next = cur;
+        return;
+    }
+
+    prev->next = node;
+    queue->last = node;
 }
 
 Tree *Dequeue(Queue *queue)
@@ -79,12 +78,7 @@ Tree *Dequeue(Queue *queue)
         return NULL;
 
     Node *node = queue->first;
-
     queue->first = node->next;
-
-    if (queue->first)
-        queue->first->prev = NULL;
-
     Tree *tree = node->value;
     free(node);
 
@@ -98,7 +92,7 @@ void FreeQueue(Queue *queue)
     while (cur)
     {
         Node *next = cur->next;
-        free(next);
+        free(cur);
         cur = next;
     }
 
@@ -114,10 +108,7 @@ void PrintQueue(Queue *queue)
     {
         Tree *tree = cur->value;
 
-        if (IsLeafTree(tree))
-            printf("%c ", GetValueTree(tree));
-        else
-            printf("%d ", GetWeigthTree(tree));
+        printf("%c -> ", GetValueTree(tree));
 
         cur = cur->next;
     }
@@ -139,4 +130,40 @@ int ExistsQueue(Queue *queue, int key)
     }
 
     return 0;
+}
+
+Tree *ToHuffmanTree(Queue *queue)
+{
+    assert(queue);
+    Tree *huffmanTree = NULL;
+    Tree *tree1 = NULL;
+    Tree *tree2 = NULL;
+
+    while ((tree1 = Dequeue(queue)))
+    {
+        if (!(tree2 = Dequeue(queue)))
+        {
+            FreeQueue(queue);
+            return tree1;
+        }
+
+        int frequency = GetFrequencyTree(tree1) + GetFrequencyTree(tree2);
+        huffmanTree = CreateTree(0, frequency, tree1, tree2);
+        Enqueue(queue, huffmanTree);
+    }
+
+    FreeQueue(queue);
+
+    return huffmanTree;
+}
+
+static Node *CreateNode(Tree *tree)
+{
+    assert(tree);
+    Node *node = malloc(sizeof(Node));
+    assert(node);
+    node->value = tree;
+    node->next = NULL;
+
+    return node;
 }
