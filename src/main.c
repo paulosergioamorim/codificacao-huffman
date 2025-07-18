@@ -1,69 +1,73 @@
-#include "queue.h"
-#include "bitmap.h"
-#include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <limits.h>
+#include <math.h>
+#include "heap.h"
+#include "bitmap.h"
 
-int CountCharStr(char *str, char c);
+void freeEncodingTable(unsigned char **table);
 
 int main(int argc, char const *argv[])
 {
-    Queue *queue = CreateQueue();
-    char *str = "bom esse bombom";
-
-    for (int i = 0; i < strlen(str); i++)
+    if (argc < 2)
     {
-        char c = str[i];
-        int frequency = CountCharStr(str, c);
-
-        if (!ExistsQueue(queue, c))
-            Enqueue(queue, CreateTree(c, frequency, NULL, NULL));
+        fprintf(stderr, "Insira um arquivo para comprimir.\n");
+        exit(1);
     }
 
-    Tree *huffmanTree = ToHuffmanTree(queue);
-    FILE *pFile = fopen("compact.bin", "wb+");
-    bitmap *huffmanTreeBm = EncodeHuffmanTree(huffmanTree);
+    Heap *heap = createHeap();
+    FILE *fpIn = fopen(argv[1], "rb");
+    assert(fpIn);
+    int freqs[UCHAR_MAX] = {0};
+    unsigned char c = 0;
 
-    bitmap *contentBm = bitmapInit(strlen(str) * GetHeightTree(huffmanTree));
+    while (fscanf(fpIn, "%c", &c) != EOF)
+        freqs[c]++;
 
-    if (!pFile)
-    {
-        return 0;
-    }
-
-    for (int i = 0; i < strlen(str); i++)
-    {
-        bitmap *charBm = EncodeCharHuffmanTree(huffmanTree, str[i]);
-
-        for (int i = 0; i < bitmapGetLength(charBm); i++)
+    for (int i = 0; i < UCHAR_MAX; i++)
+        if (freqs[i])
         {
-            bitmapAppendLeastSignificantBit(contentBm, bitmapGetBit(charBm, i));
+            Tree *tree = createTree(i, freqs[i]);
+            pushHeap(heap, tree);
         }
 
-        bitmapLibera(charBm);
-    }
+    Tree *huffmanTree = convertToHuffmanTree(heap);
+    int huffmanTreeHeight = getHeightTree(huffmanTree);
 
-    fwrite(bitmapGetContents(huffmanTreeBm), sizeof(char), (bitmapGetLength(huffmanTreeBm) + 7) / 8, pFile);
-    // fwrite(bitmapGetContents(contentBm), sizeof(char), (bitmapGetLength(contentBm) + 7) / 8, pFile);
-    bitmapLibera(huffmanTreeBm);
-    bitmapLibera(contentBm);
-    fclose(pFile);
+    unsigned char **table = convertHuffmanTreeToTable(huffmanTree);
 
-    FreeTree(huffmanTree);
+    FILE *fpOut = fopen("saida.txt", "wb+");
+    assert(fpOut);
+
+    bitmap *bm = bitmapInit(ftell(fpIn) * getHeightTree(huffmanTree));
+
+    rewind(fpIn);
+
+    while (fscanf(fpIn, "%c", &c) != EOF)
+        for (int i = 0; table[c][i] != 2 && i < huffmanTreeHeight; i++)
+            bitmapAppendLeastSignificantBit(bm, table[c][i]);
+
+    unsigned int validBitsCount = bitmapGetLength(bm);
+
+    fwrite(&validBitsCount, 1, sizeof(int), fpOut);
+    fwrite(bitmapGetContents(bm), (int)ceil(validBitsCount / 8), sizeof(char), fpOut);
+
+    freeEncodingTable(table);
+    freeTree(huffmanTree);
+    fclose(fpIn);
+    fclose(fpOut);
+    bitmapLibera(bm);
 
     return 0;
 }
 
-int CountCharStr(char *str, char c)
+void freeEncodingTable(unsigned char **table)
 {
-    int count = 0;
+    assert(table);
 
-    while (*str)
-    {
-        if (*str == c)
-            count++;
+    for (int i = 0; i < UCHAR_MAX; i++)
+        free(table[i]);
 
-        str++;
-    }
-
-    return count;
+    free(table);
 }

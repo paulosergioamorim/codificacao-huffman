@@ -1,32 +1,45 @@
 #pragma once
-#include "bitmap.h"
 
 typedef struct tree Tree;
 
-Tree *CreateTree(int value, int frequency, Tree *left, Tree *right);
+Tree *createTree(unsigned char value, int frequency);
 
-Tree *GetLeftTree(Tree *tree);
+void setLeftTree(Tree *tree, Tree *left);
 
-Tree *GetRightTree(Tree *tree);
+Tree *getLeftTree(Tree *tree);
 
-int GetValueTree(Tree *tree);
+void setRightTree(Tree *tree, Tree *right);
 
-int GetFrequencyTree(Tree *tree);
+Tree *getRightTree(Tree *tree);
 
-int IsLeafTree(Tree *tree);
+void setParentTree(Tree *tree, Tree *parent);
 
-void FreeTree(Tree *tree);
+Tree *getParentTree(Tree *tree);
 
-void PrintTree(Tree *tree);
+int isRootTree(Tree *tree);
 
-int GetHeightTree(Tree *tree);
+int isLeafTree(Tree *tree);
 
-int GetLeafCount(Tree *tree);
+int getAllNodesCount(Tree *tree);
 
-int GetNodesCount(Tree *tree);
+int getLeafNodesCount(Tree *tree);
 
-bitmap *EncodeHuffmanTree(Tree *huffmanTree);
+char getValueTree(Tree *tree);
 
-bitmap *EncodeCharHuffmanTree(Tree *huffmanTree, char encodingChar);
+int getFrequencyTree(Tree *tree);
 
-char DecodeCharHuffmanTree(Tree *huffmanTree, int encodedChar);
+void freeTree(Tree *tree);
+
+int compareTrees(Tree *tree1, Tree *tree2);
+
+int getHeightTree(Tree *tree);
+
+void printTree(Tree *tree);
+
+int existsTree(Tree *tree, char value);
+
+Tree *findTree(Tree *tree, char value);
+
+int encodeLeafTree(Tree *tree);
+
+unsigned char **convertHuffmanTreeToTable(Tree *tree);

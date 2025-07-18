@@ -1,92 +1,131 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <limits.h>
+#include <string.h>
 #include "tree.h"
 
 struct tree
 {
-    char value;
-    int frequency;
+    Tree *parent;
     Tree *left;
     Tree *right;
+    unsigned char value;
+    int frequency;
 };
 
-static void inner_EncodeCharHuffmanTree(Tree *tree, char encodingChar, bitmap *bm);
-void bitmapAppendByte(bitmap *bm, unsigned char byte);
-
-Tree *CreateTree(int value, int frequency, Tree *left, Tree *right)
+Tree *createTree(unsigned char value, int frequency)
 {
     Tree *tree = malloc(sizeof(Tree));
     assert(tree);
-    tree->left = left;
-    tree->right = right;
+    tree->parent = tree->left = tree->right = NULL;
     tree->value = value;
     tree->frequency = frequency;
 
     return tree;
 }
 
-Tree *GetLeftTree(Tree *tree)
+void setLeftTree(Tree *tree, Tree *left)
 {
     assert(tree);
-    return tree->right;
+    tree->left = left;
 }
 
-Tree *GetRightTree(Tree *tree)
+Tree *getLeftTree(Tree *tree)
 {
     assert(tree);
     return tree->left;
 }
 
-int GetValueTree(Tree *tree)
+void setRightTree(Tree *tree, Tree *right)
 {
     assert(tree);
-    return tree->value;
+    tree->right = right;
 }
 
-int GetFrequencyTree(Tree *tree)
+Tree *getRightTree(Tree *tree)
 {
     assert(tree);
-    return tree->frequency;
+    return tree->right;
 }
 
-int IsLeafTree(Tree *tree)
+void setParentTree(Tree *tree, Tree *parent)
+{
+    assert(tree);
+    tree->parent = parent;
+}
+
+Tree *getParentTree(Tree *tree)
+{
+    assert(tree);
+    return tree->parent;
+}
+
+int isRootTree(Tree *tree)
+{
+    assert(tree);
+    return !tree->parent;
+}
+
+int isLeafTree(Tree *tree)
 {
     assert(tree);
     return !tree->left && !tree->right;
 }
 
-void FreeTree(Tree *tree)
-{
-    if (!tree)
-        return;
-
-    FreeTree(tree->left);
-    FreeTree(tree->right);
-    free(tree);
-}
-
-void PrintTree(Tree *tree)
-{
-    printf("<");
-    if (!tree)
-        return;
-    if (IsLeafTree(tree))
-        printf("%c (%d)", GetValueTree(tree), GetFrequencyTree(tree));
-    else
-        printf("%d ", GetFrequencyTree(tree));
-    PrintTree(tree->left);
-    PrintTree(tree->right);
-    printf(">");
-}
-
-int GetHeightTree(Tree *tree)
+int getAllNodesCount(Tree *tree)
 {
     if (!tree)
         return 0;
 
-    int leftHeight = 1 + GetHeightTree(tree->left);
-    int rightHeight = 1 + GetHeightTree(tree->right);
+    return 1 + getAllNodesCount(tree->left) + getAllNodesCount(tree->right);
+}
+
+int getLeafNodesCount(Tree *tree)
+{
+    if (!tree)
+        return 0;
+
+    if (isLeafTree(tree))
+        return 1;
+
+    return getLeafNodesCount(tree->left) + getLeafNodesCount(tree->right);
+}
+
+char getValueTree(Tree *tree)
+{
+    assert(tree);
+    return tree->value;
+}
+
+int getFrequencyTree(Tree *tree)
+{
+    assert(tree);
+    return tree->frequency;
+}
+
+void freeTree(Tree *tree)
+{
+    if (!tree)
+        return;
+
+    freeTree(tree->left);
+    freeTree(tree->right);
+    free(tree);
+}
+
+int compareTrees(Tree *tree1, Tree *tree2)
+{
+    return tree1->frequency >= tree2->frequency;
+}
+
+int getHeightTree(Tree *tree)
+{
+    if (!tree)
+        return 0;
+
+    int leftHeight = 1 + getHeightTree(tree->left);
+    int rightHeight = 1 + getHeightTree(tree->right);
 
     if (leftHeight >= rightHeight)
         return leftHeight;
@@ -94,101 +133,103 @@ int GetHeightTree(Tree *tree)
     return rightHeight;
 }
 
-int ExistsTree(Tree *tree, char key)
+void printTree(Tree *tree)
+{
+    if (!tree)
+        return;
+
+    printf("<");
+
+    if (isLeafTree(tree))
+        printf("(%c, %d)", tree->value, tree->frequency);
+    else
+        printf("%d", tree->frequency);
+
+    printTree(tree->left);
+    printTree(tree->right);
+
+    printf(">");
+}
+
+int existsTree(Tree *tree, char value)
 {
     if (!tree)
         return 0;
 
-    if (tree->value == key)
-        return 1;
+    if (isLeafTree(tree))
+        return tree->value == value;
 
-    return ExistsTree(tree->left, key) || ExistsTree(tree->right, key);
+    return existsTree(tree->left, value) || existsTree(tree->right, value);
 }
 
-static void inner_EncodeCharHuffmanTree(Tree *tree, char encodingChar, bitmap *bm)
+Tree *findTree(Tree *tree, char value)
 {
-    if (IsLeafTree(tree) && tree->value == encodingChar)
-        return;
+    if (!tree)
+        return NULL;
 
-    if (ExistsTree(tree->left, encodingChar))
+    if (isLeafTree(tree))
+        return tree->value == value ? tree : NULL;
+
+    Tree *leftFind = findTree(tree->left, value);
+    Tree *rightFind = findTree(tree->right, value);
+
+    return leftFind ? leftFind : rightFind;
+}
+
+int encodeLeafTree(Tree *tree)
+{
+    int encode = 1;
+
+    while (!isRootTree(tree))
     {
-        bitmapAppendLeastSignificantBit(bm, 0b0);
-        inner_EncodeCharHuffmanTree(tree->left, encodingChar, bm);
-        return;
+        encode = encode << 1;
+        Tree *parent = tree->parent;
+
+        if (parent->right == tree)
+            encode = encode | 1;
+
+        tree = tree->parent;
     }
 
-    bitmapAppendLeastSignificantBit(bm, 0b1);
-    inner_EncodeCharHuffmanTree(tree->right, encodingChar, bm);
+    return encode;
 }
 
-bitmap *EncodeCharHuffmanTree(Tree *tree, char c)
-{
-    bitmap *bm = bitmapInit(GetHeightTree(tree));
-    inner_EncodeCharHuffmanTree(tree, c, bm);
-    return bm;
-}
-
-char DecodeCharHuffmanTree(Tree *huffmanTree, int encodedChar)
-{
-    if (IsLeafTree(huffmanTree))
-        return GetValueTree(huffmanTree);
-
-    int moveToLeft = encodedChar % 2 == 0;
-    encodedChar = encodedChar >> 1;
-
-    return DecodeCharHuffmanTree(moveToLeft ? huffmanTree->left : huffmanTree->right, encodedChar);
-}
-
-int GetLeafCount(Tree *tree)
-{
-    if (!tree)
-        return 0;
-
-    if (IsLeafTree(tree))
-        return 1;
-
-    return GetLeafCount(tree->left) + GetLeafCount(tree->right);
-}
-
-int GetNodesCount(Tree *tree)
-{
-    if (!tree)
-        return 0;
-
-    return 1 + GetNodesCount(tree->left) + GetNodesCount(tree->right);
-}
-
-static void inner_EncodeHuffmanTree(Tree *tree, bitmap *bm);
-
-static void inner_EncodeHuffmanTree(Tree *tree, bitmap *bm)
+void helper_convertHuffmanTreeToTable(Tree *tree, unsigned char **table)
 {
     if (!tree)
         return;
 
-    if (IsLeafTree(tree))
+    if (!isLeafTree(tree))
     {
-        bitmapAppendLeastSignificantBit(bm, 0b1);
-        bitmapAppendByte(bm, tree->value);
+        helper_convertHuffmanTreeToTable(tree->left, table);
+        helper_convertHuffmanTreeToTable(tree->right, table);
         return;
     }
 
-    bitmapAppendLeastSignificantBit(bm, 0b0);
-    inner_EncodeHuffmanTree(tree->left, bm);
-    inner_EncodeHuffmanTree(tree->right, bm);
-}
+    int encodedChar = encodeLeafTree(tree);
+    int i = 0;
 
-void bitmapAppendByte(bitmap *bm, unsigned char byte)
-{
-    for (int i = 7; i >= 0; i--)
+    for (; encodedChar != 1; i++)
     {
-        unsigned char bit = (byte >> i) & 0x01;
-        bitmapAppendLeastSignificantBit(bm, bit);
+        table[tree->value][i] = encodedChar & 1;
+        encodedChar = encodedChar >> 1;
     }
 }
 
-bitmap *EncodeHuffmanTree(Tree *huffmanTree)
+unsigned char **convertHuffmanTreeToTable(Tree *tree)
 {
-    bitmap *bm = bitmapInit(GetLeafCount(huffmanTree) * 8 + GetNodesCount(huffmanTree));
-    inner_EncodeHuffmanTree(huffmanTree, bm);
-    return bm;
+    int height = getHeightTree(tree);
+    unsigned char **table = malloc(UCHAR_MAX * sizeof(char *));
+    assert(table);
+
+    for (int i = 0; i < UCHAR_MAX; i++)
+    {
+        table[i] = malloc(height * sizeof(char));
+        memset(table[i], 2, height);
+        assert(table[i]);
+    }
+
+    helper_convertHuffmanTreeToTable(tree, table);
+
+    return table;
 }
