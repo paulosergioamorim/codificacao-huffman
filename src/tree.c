@@ -168,7 +168,7 @@ void freeEncodingTable(ArrayByte **table)
     free(table);
 }
 
-void helper_dumpHuffmanTree(Tree *tree, ArrayByte *array)
+void helper_saveHuffmanTreeToFile(Tree *tree, ArrayByte *array)
 {
     if (!tree)
         return;
@@ -181,8 +181,8 @@ void helper_dumpHuffmanTree(Tree *tree, ArrayByte *array)
     }
 
     insertLSBArrayByte(array, 0x00);
-    helper_dumpHuffmanTree(tree->left, array);
-    helper_dumpHuffmanTree(tree->right, array);
+    helper_saveHuffmanTreeToFile(tree->left, array);
+    helper_saveHuffmanTreeToFile(tree->right, array);
 }
 
 void saveHuffmanTreeToFile(Tree *tree, FILE *fp)
@@ -191,17 +191,13 @@ void saveHuffmanTreeToFile(Tree *tree, FILE *fp)
     int leafNodesCount = getLeafNodesCount(tree);
     int bitmapSize = allNodesCount + leafNodesCount * 8; // (allNodesCount - leafNodesCount) * 1 + leafNodesCount * 9
     ArrayByte *array = createArrayByte(bitmapSize);
-    helper_dumpHuffmanTree(tree, array);
-    fwrite(&leafNodesCount, 1, sizeof(int), fp);
+    helper_saveHuffmanTreeToFile(tree, array);
     fwrite(getContentArrayByte(array), getBytesLengthArrayByte(array), sizeof(byte), fp);
     freeArrayByte(array);
 }
 
-Tree *helper_buildHuffmanTreeFromFile(int leafNodesCount, int currentLeafNodesCount, BitReader *br)
+Tree *helper_buildHuffmanTreeFromFile(BitReader *br)
 {
-    if (leafNodesCount == currentLeafNodesCount)
-        return NULL;
-
     int isLeafNode = readBitBitReader(br);
 
     if (isLeafNode)
@@ -212,18 +208,16 @@ Tree *helper_buildHuffmanTreeFromFile(int leafNodesCount, int currentLeafNodesCo
 
     Tree *tree = createTree(0, 0);
 
-    tree->left = helper_buildHuffmanTreeFromFile(leafNodesCount, currentLeafNodesCount, br);
-    tree->right = helper_buildHuffmanTreeFromFile(leafNodesCount, currentLeafNodesCount, br);
+    tree->left = helper_buildHuffmanTreeFromFile(br);
+    tree->right = helper_buildHuffmanTreeFromFile(br);
 
     return tree;
 }
 
 Tree *createHuffmanTreeFromFile(FILE *fp)
 {
-    int leafNodesCount = 0;
-    fread(&leafNodesCount, 1, sizeof(int), fp);
     BitReader *br = createBitReader(fp);
-    Tree *huffmanTree = helper_buildHuffmanTreeFromFile(leafNodesCount, 0, br);
+    Tree *huffmanTree = helper_buildHuffmanTreeFromFile(br);
     freeBitReader(br);
     return huffmanTree;
 }
