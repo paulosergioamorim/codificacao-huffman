@@ -1,5 +1,8 @@
 .vscode
 prog
+encoder
+decoder
 tests
 *.pdf
 .bin
+saida*

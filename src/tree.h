@@ -1,8 +1,10 @@
 #pragma once
 
+#include "arraybyte.h"
+
 typedef struct tree Tree;
 
-Tree *createTree(unsigned char value, int frequency);
+Tree *createTree(byte value, int frequency);
 
 void setLeftTree(Tree *tree, Tree *left);
 
@@ -12,19 +14,13 @@ void setRightTree(Tree *tree, Tree *right);
 
 Tree *getRightTree(Tree *tree);
 
-void setParentTree(Tree *tree, Tree *parent);
-
-Tree *getParentTree(Tree *tree);
-
-int isRootTree(Tree *tree);
-
 int isLeafTree(Tree *tree);
 
 int getAllNodesCount(Tree *tree);
 
 int getLeafNodesCount(Tree *tree);
 
-char getValueTree(Tree *tree);
+byte getValueTree(Tree *tree);
 
 int getFrequencyTree(Tree *tree);
 
@@ -36,10 +32,10 @@ int getHeightTree(Tree *tree);
 
 void printTree(Tree *tree);
 
-int existsTree(Tree *tree, char value);
+ArrayByte **convertHuffmanTreeToTable(Tree *tree);
 
-Tree *findTree(Tree *tree, char value);
+void freeEncodingTable(ArrayByte **table);
 
-int encodeLeafTree(Tree *tree);
+void saveHuffmanTreeToFile(Tree *tree, FILE *fp);
 
-unsigned char **convertHuffmanTreeToTable(Tree *tree);
+Tree *createHuffmanTreeFromFile(FILE *fp);

@@ -125,8 +125,6 @@ Tree *convertToHuffmanTree(Heap *heap)
         Tree *tree3 = createTree(0, getFrequencyTree(tree1) + getFrequencyTree(tree2));
         setLeftTree(tree3, tree1);
         setRightTree(tree3, tree2);
-        setParentTree(tree1, tree3);
-        setParentTree(tree2, tree3);
         pushHeap(heap, tree3);
     }
 
