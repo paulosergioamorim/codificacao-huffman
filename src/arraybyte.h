@@ -12,8 +12,6 @@ void insertLSBArrayByte(ArrayByte *array, byte bit);
 
 void insertByteArrayByte(ArrayByte *array, byte byte);
 
-void insertCompactIntArrayByte(ArrayByte *array, int value);
-
 byte getByteArrayByte(ArrayByte *array, int index);
 
 byte getBitArrayByte(ArrayByte *array, int index);

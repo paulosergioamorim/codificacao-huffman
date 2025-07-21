@@ -1,11 +1,9 @@
 #pragma once
 #include "tree.h"
 
-#define HEAP_INITIAL_CAPACITY 64;
-
 typedef struct heap Heap;
 
-Heap *createHeap();
+Heap *createHeap(int maxCapacity);
 
 void pushHeap(Heap *heap, Tree *tree);
 

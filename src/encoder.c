@@ -6,8 +6,6 @@
 #include "heap.h"
 #include "arraybyte.h"
 
-void freeEncodingTable(ArrayByte **table);
-
 int main(int argc, char const *argv[])
 {
     if (argc < 3)
@@ -16,18 +14,26 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-    Heap *heap = createHeap();
-    FILE *fpIn = fopen(argv[1], "rb");
-    assert(fpIn);
-    int freqs[UCHAR_MAX] = {0};
+    FILE *INPUT_FILE = fopen(argv[1], "rb");
+    assert(INPUT_FILE);
+    unsigned int freqs[UCHAR_MAX] = {0};
     unsigned char c = 0;
 
-    while (fscanf(fpIn, "%c", &c) != EOF)
+    while (fscanf(INPUT_FILE, "%c", &c) != EOF)
         freqs[c]++;
+
+    int charsCount = 0;
+
+    for (int i = 0; i < UCHAR_MAX; i++)
+        if (freqs[i])
+            charsCount++;
+
+    Heap *heap = createHeap(charsCount);
 
     for (int i = 0; i < UCHAR_MAX; i++)
         if (freqs[i])
         {
+
             Tree *tree = createTree(i, freqs[i]);
             pushHeap(heap, tree);
         }
@@ -35,15 +41,15 @@ int main(int argc, char const *argv[])
     Tree *huffmanTree = convertToHuffmanTree(heap);
     ArrayByte **table = convertHuffmanTreeToTable(huffmanTree);
 
-    FILE *fpOut = fopen(argv[2], "wb+");
-    assert(fpOut);
+    FILE *OUTPUT_FILE = fopen(argv[2], "wb+");
+    assert(OUTPUT_FILE);
 
-    ArrayByte *contentArrayByte = createArrayByte(ftell(fpIn));
-    rewind(fpIn);
+    ArrayByte *contentArrayByte = createArrayByte(ftell(INPUT_FILE) * 8);
+    rewind(INPUT_FILE);
 
-    saveHuffmanTreeToFile(huffmanTree, fpOut);
+    saveHuffmanTreeToFile(huffmanTree, OUTPUT_FILE);
 
-    while (fscanf(fpIn, "%c", &c) != EOF)
+    while (fscanf(INPUT_FILE, "%c", &c) != EOF)
     {
         ArrayByte *array = table[c];
         int length = getBitsLengthArrayByte(array);
@@ -53,13 +59,13 @@ int main(int argc, char const *argv[])
 
     unsigned int bitsLength = getBitsLengthArrayByte(contentArrayByte);
 
-    fwrite(&bitsLength, 1, sizeof(int), fpOut);
-    fwrite(getContentArrayByte(contentArrayByte), getBytesLengthArrayByte(contentArrayByte), sizeof(byte), fpOut);
+    fwrite(&bitsLength, 1, sizeof(int), OUTPUT_FILE);
+    fwrite(getContentArrayByte(contentArrayByte), getBytesLengthArrayByte(contentArrayByte), sizeof(byte), OUTPUT_FILE);
 
     freeEncodingTable(table);
     freeTree(huffmanTree);
-    fclose(fpIn);
-    fclose(fpOut);
+    fclose(INPUT_FILE);
+    fclose(OUTPUT_FILE);
     freeArrayByte(contentArrayByte);
 
     return 0;

@@ -10,11 +10,11 @@ struct heap
     int capacity;
 };
 
-Heap *createHeap()
+Heap *createHeap(int maxCapacity)
 {
     Heap *heap = malloc(sizeof(Heap));
     assert(heap);
-    heap->capacity = HEAP_INITIAL_CAPACITY;
+    heap->capacity = maxCapacity;
     heap->size = 0;
     heap->vec = malloc(heap->capacity * sizeof(Tree *));
     assert(heap->vec);
@@ -25,13 +25,7 @@ Heap *createHeap()
 void pushHeap(Heap *heap, Tree *tree)
 {
     assert(heap);
-    if (heap->size == heap->capacity)
-    {
-        heap->capacity *= 2;
-        heap->vec = realloc(heap->vec, heap->capacity * sizeof(Tree *));
-        assert(heap->vec);
-    }
-
+    assert(heap->size < heap->capacity);
     int i = heap->size++;
 
     while (i > 0)

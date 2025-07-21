@@ -14,15 +14,15 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-    FILE *in = fopen(argv[1], "rb");
-    FILE *out = fopen(argv[2], "w+");
-    assert(in);
-    assert(out);
-    Tree *huffmanTree = createHuffmanTreeFromFile(in);
+    FILE *INPUT_FILE = fopen(argv[1], "rb");
+    FILE *OUTPUT_FILE = fopen(argv[2], "w+");
+    assert(INPUT_FILE);
+    assert(OUTPUT_FILE);
+    Tree *huffmanTree = createHuffmanTreeFromFile(INPUT_FILE);
     Tree *cur = huffmanTree;
     int validBits = 0;
-    fread(&validBits, 1, sizeof(int), in);
-    BitReader *br = createBitReader(in);
+    fread(&validBits, 1, sizeof(int), INPUT_FILE);
+    BitReader *br = createBitReader(INPUT_FILE);
 
     for (int i = 0; i < validBits; i++)
     {
@@ -35,15 +35,15 @@ int main(int argc, char const *argv[])
 
         if (isLeafTree(cur))
         {
-            fputc(getValueTree(cur), out);
+            fputc(getValueTree(cur), OUTPUT_FILE);
             cur = huffmanTree;
         }
     }
 
     freeBitReader(br);
     freeTree(huffmanTree);
-    fclose(in);
-    fclose(out);
+    fclose(INPUT_FILE);
+    fclose(OUTPUT_FILE);
 
     return 0;
 }

@@ -13,7 +13,7 @@ struct tree
     int frequency;
 };
 
-Tree *createTree(unsigned char value, int frequency)
+Tree *createTree(byte value, int frequency)
 {
     Tree *tree = malloc(sizeof(Tree));
     assert(tree);
@@ -97,6 +97,8 @@ void freeTree(Tree *tree)
 
 int compareTrees(Tree *tree1, Tree *tree2)
 {
+    assert(tree1);
+    assert(tree2);
     return tree1->frequency >= tree2->frequency;
 }
 
@@ -151,6 +153,7 @@ void helper_convertHuffmanTreeToTable(Tree *tree, ArrayByte **table, int code, i
 
 ArrayByte **convertHuffmanTreeToTable(Tree *tree)
 {
+    assert(tree);
     ArrayByte **table = calloc(UCHAR_MAX, sizeof(ArrayByte *));
     assert(table);
 
@@ -161,6 +164,7 @@ ArrayByte **convertHuffmanTreeToTable(Tree *tree)
 
 void freeEncodingTable(ArrayByte **table)
 {
+    assert(table);
     for (int i = 0; i < UCHAR_MAX; i++)
         if (table[i])
             freeArrayByte(table[i]);
@@ -187,6 +191,7 @@ void helper_saveHuffmanTreeToFile(Tree *tree, ArrayByte *array)
 
 void saveHuffmanTreeToFile(Tree *tree, FILE *fp)
 {
+    assert(tree);
     int allNodesCount = getAllNodesCount(tree);
     int leafNodesCount = getLeafNodesCount(tree);
     int bitmapSize = allNodesCount + leafNodesCount * 8; // (allNodesCount - leafNodesCount) * 1 + leafNodesCount * 9

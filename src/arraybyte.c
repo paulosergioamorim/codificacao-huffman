@@ -11,15 +11,13 @@ struct arraybyte
     int size;
 };
 
-void grow(ArrayByte *array);
-
 ArrayByte *createArrayByte(int capacity)
 {
     ArrayByte *array = malloc(sizeof(ArrayByte));
     assert(array);
     array->capacity = capacity;
     array->size = 0;
-    array->vec = calloc(array->capacity, sizeof(byte));
+    array->vec = calloc((array->capacity + 7) / 8, sizeof(byte));
     assert(array->vec);
 
     return array;
@@ -27,7 +25,7 @@ ArrayByte *createArrayByte(int capacity)
 
 void insertMSBArrayByte(ArrayByte *array, byte bit)
 {
-    assert(array->size / 8 < array->capacity);
+    assert(array->size < array->capacity);
     bit &= 0x80;
     int indexOfByte = array->size / 8;
     int indexOfBit = array->size % 8;
@@ -38,7 +36,7 @@ void insertMSBArrayByte(ArrayByte *array, byte bit)
 
 void insertLSBArrayByte(ArrayByte *array, byte bit)
 {
-    assert(array->size / 8 < array->capacity);
+    assert(array->size < array->capacity);
     bit &= 0x01;
     int indexOfByte = array->size / 8;
     int indexOfBit = array->size % 8;
@@ -53,12 +51,6 @@ void insertByteArrayByte(ArrayByte *array, byte byte)
 {
     for (int i = 0; i < 8; i++)
         insertMSBArrayByte(array, byte << i);
-}
-
-void insertCompactIntArrayByte(ArrayByte *array, int value)
-{
-    for (int i = 0; i < log2(value); i++)
-        insertLSBArrayByte(array, (byte)((value >> i) & 0x01));
 }
 
 byte *getContentArrayByte(ArrayByte *array)
@@ -84,7 +76,7 @@ void freeArrayByte(ArrayByte *array)
 
 byte getByteArrayByte(ArrayByte *array, int index)
 {
-    if ((int)(array->size / 8.0 + 1) <= index)
+    if (index >= (array->size + 7) / 8)
         return 0;
 
     return array->vec[index];
