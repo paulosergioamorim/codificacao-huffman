@@ -1,12 +1,11 @@
 #include "bitreader.h"
 #include <stdlib.h>
 #include <assert.h>
-#include <string.h>
 
 struct bitreader
 {
     FILE *fp;
-    byte buffer;
+    unsigned char buffer;
     int bitsCount;
 };
 
@@ -20,7 +19,7 @@ BitReader *createBitReader(FILE *fp)
     return br;
 }
 
-byte readBitBitReader(BitReader *br)
+unsigned char readBitBitReader(BitReader *br)
 {
     if (br->bitsCount == 0)
     {
@@ -28,16 +27,16 @@ byte readBitBitReader(BitReader *br)
         br->buffer = fgetc(br->fp);
     }
 
-    byte value = (br->buffer >> 7) & 0x01;
+    unsigned char value = (br->buffer >> 7) & 0x01;
     br->buffer <<= 1;
     br->bitsCount--;
 
     return value;
 }
 
-byte readByteBitReader(BitReader *br)
+unsigned char readByteBitReader(BitReader *br)
 {
-    byte value = 0;
+    unsigned char value = 0;
 
     for (int i = 0; i < 8; i++)
         value = (value << 1) | readBitBitReader(br);

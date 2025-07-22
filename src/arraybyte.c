@@ -6,7 +6,7 @@
 
 struct arraybyte
 {
-    byte *vec;
+    unsigned char *vec;
     int capacity;
     int size;
 };
@@ -17,13 +17,13 @@ ArrayByte *createArrayByte(int capacity)
     assert(array);
     array->capacity = capacity;
     array->size = 0;
-    array->vec = calloc((array->capacity + 7) / 8, sizeof(byte));
+    array->vec = calloc((array->capacity + 7) / 8, sizeof(unsigned char));
     assert(array->vec);
 
     return array;
 }
 
-void insertMSBArrayByte(ArrayByte *array, byte bit)
+void insertMSBArrayByte(ArrayByte *array, unsigned char bit)
 {
     assert(array->size < array->capacity);
     bit &= 0x80;
@@ -34,7 +34,7 @@ void insertMSBArrayByte(ArrayByte *array, byte bit)
     array->size++;
 }
 
-void insertLSBArrayByte(ArrayByte *array, byte bit)
+void insertLSBArrayByte(ArrayByte *array, unsigned char bit)
 {
     assert(array->size < array->capacity);
     bit &= 0x01;
@@ -47,13 +47,13 @@ void insertLSBArrayByte(ArrayByte *array, byte bit)
     array->size++;
 }
 
-void insertByteArrayByte(ArrayByte *array, byte byte)
+void insertByteArrayByte(ArrayByte *array, unsigned char byte)
 {
     for (int i = 0; i < 8; i++)
         insertMSBArrayByte(array, byte << i);
 }
 
-byte *getContentArrayByte(ArrayByte *array)
+unsigned char *getContentArrayByte(ArrayByte *array)
 {
     return array->vec;
 }
@@ -74,7 +74,7 @@ void freeArrayByte(ArrayByte *array)
     free(array);
 }
 
-byte getByteArrayByte(ArrayByte *array, int index)
+unsigned char getByteArrayByte(ArrayByte *array, int index)
 {
     if (index >= (array->size + 7) / 8)
         return 0;
@@ -82,7 +82,7 @@ byte getByteArrayByte(ArrayByte *array, int index)
     return array->vec[index];
 }
 
-byte getBitArrayByte(ArrayByte *array, int index)
+unsigned char getBitArrayByte(ArrayByte *array, int index)
 {
     if (index >= array->size)
         return 0;
@@ -90,7 +90,7 @@ byte getBitArrayByte(ArrayByte *array, int index)
     int indexToByte = index / 8;
     int indexToBit = index % 8;
 
-    byte byte = array->vec[indexToByte];
+    unsigned char byte = array->vec[indexToByte];
     int shift = 7 - indexToBit;
 
     return byte >> shift & 0x01;

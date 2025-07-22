@@ -9,11 +9,11 @@ struct tree
 {
     Tree *left;
     Tree *right;
-    byte value;
+    unsigned char value;
     int frequency;
 };
 
-Tree *createTree(byte value, int frequency)
+Tree *createTree(unsigned char value, int frequency)
 {
     Tree *tree = malloc(sizeof(Tree));
     assert(tree);
@@ -54,15 +54,15 @@ int isLeafTree(Tree *tree)
     return !tree->left && !tree->right;
 }
 
-int getAllNodesCount(Tree *tree)
+int getNodesCountTree(Tree *tree)
 {
     if (!tree)
         return 0;
 
-    return 1 + getAllNodesCount(tree->left) + getAllNodesCount(tree->right);
+    return 1 + getNodesCountTree(tree->left) + getNodesCountTree(tree->right);
 }
 
-int getLeafNodesCount(Tree *tree)
+int getLeafNodesCountTree(Tree *tree)
 {
     if (!tree)
         return 0;
@@ -70,10 +70,10 @@ int getLeafNodesCount(Tree *tree)
     if (isLeafTree(tree))
         return 1;
 
-    return getLeafNodesCount(tree->left) + getLeafNodesCount(tree->right);
+    return getLeafNodesCountTree(tree->left) + getLeafNodesCountTree(tree->right);
 }
 
-byte getValueTree(Tree *tree)
+unsigned char getValueTree(Tree *tree)
 {
     assert(tree);
     return tree->value;
@@ -130,101 +130,6 @@ void printTree(Tree *tree)
     printTree(tree->right);
 
     printf(">");
-}
-
-void helper_convertHuffmanTreeToTable(Tree *tree, ArrayByte **table, int code, int bitsCount)
-{
-    if (!tree)
-        return;
-
-    if (!isLeafTree(tree))
-    {
-        helper_convertHuffmanTreeToTable(tree->left, table, code << 1, bitsCount + 1);
-        helper_convertHuffmanTreeToTable(tree->right, table, (code << 1) | 0x01, bitsCount + 1);
-        return;
-    }
-
-    table[tree->value] = createArrayByte(bitsCount);
-    assert(table[tree->value]);
-
-    for (int i = bitsCount - 1; i >= 0; i--)
-        insertLSBArrayByte(table[tree->value], code >> i);
-}
-
-ArrayByte **convertHuffmanTreeToTable(Tree *tree)
-{
-    assert(tree);
-    ArrayByte **table = calloc(UCHAR_MAX, sizeof(ArrayByte *));
-    assert(table);
-
-    helper_convertHuffmanTreeToTable(tree, table, 1, 0);
-
-    return table;
-}
-
-void freeEncodingTable(ArrayByte **table)
-{
-    assert(table);
-    for (int i = 0; i < UCHAR_MAX; i++)
-        if (table[i])
-            freeArrayByte(table[i]);
-
-    free(table);
-}
-
-void helper_saveHuffmanTreeToFile(Tree *tree, ArrayByte *array)
-{
-    if (!tree)
-        return;
-
-    if (isLeafTree(tree))
-    {
-        insertLSBArrayByte(array, 0x01);
-        insertByteArrayByte(array, tree->value);
-        return;
-    }
-
-    insertLSBArrayByte(array, 0x00);
-    helper_saveHuffmanTreeToFile(tree->left, array);
-    helper_saveHuffmanTreeToFile(tree->right, array);
-}
-
-void saveHuffmanTreeToFile(Tree *tree, FILE *fp)
-{
-    assert(tree);
-    int allNodesCount = getAllNodesCount(tree);
-    int leafNodesCount = getLeafNodesCount(tree);
-    int bitmapSize = allNodesCount + leafNodesCount * 8; // (allNodesCount - leafNodesCount) * 1 + leafNodesCount * 9
-    ArrayByte *array = createArrayByte(bitmapSize);
-    helper_saveHuffmanTreeToFile(tree, array);
-    fwrite(getContentArrayByte(array), getBytesLengthArrayByte(array), sizeof(byte), fp);
-    freeArrayByte(array);
-}
-
-Tree *helper_buildHuffmanTreeFromFile(BitReader *br)
-{
-    int isLeafNode = readBitBitReader(br);
-
-    if (isLeafNode)
-    {
-        byte value = readByteBitReader(br);
-        return createTree(value, 0);
-    }
-
-    Tree *tree = createTree(0, 0);
-
-    tree->left = helper_buildHuffmanTreeFromFile(br);
-    tree->right = helper_buildHuffmanTreeFromFile(br);
-
-    return tree;
-}
-
-Tree *createHuffmanTreeFromFile(FILE *fp)
-{
-    BitReader *br = createBitReader(fp);
-    Tree *huffmanTree = helper_buildHuffmanTreeFromFile(br);
-    freeBitReader(br);
-    return huffmanTree;
 }
 
 // Tree *createHuffmanTreeFromFile(FILE *fp)

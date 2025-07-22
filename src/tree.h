@@ -4,7 +4,7 @@
 
 typedef struct tree Tree;
 
-Tree *createTree(byte value, int frequency);
+Tree *createTree(unsigned char value, int frequency);
 
 void setLeftTree(Tree *tree, Tree *left);
 
@@ -16,11 +16,11 @@ Tree *getRightTree(Tree *tree);
 
 int isLeafTree(Tree *tree);
 
-int getAllNodesCount(Tree *tree);
+int getNodesCountTree(Tree *tree);
 
-int getLeafNodesCount(Tree *tree);
+int getLeafNodesCountTree(Tree *tree);
 
-byte getValueTree(Tree *tree);
+unsigned char getValueTree(Tree *tree);
 
 int getFrequencyTree(Tree *tree);
 
@@ -31,11 +31,3 @@ int compareTrees(Tree *tree1, Tree *tree2);
 int getHeightTree(Tree *tree);
 
 void printTree(Tree *tree);
-
-ArrayByte **convertHuffmanTreeToTable(Tree *tree);
-
-void freeEncodingTable(ArrayByte **table);
-
-void saveHuffmanTreeToFile(Tree *tree, FILE *fp);
-
-Tree *createHuffmanTreeFromFile(FILE *fp);

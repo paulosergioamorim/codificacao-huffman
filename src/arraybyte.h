@@ -1,22 +1,20 @@
 #pragma once
 
-#include "utils.h"
-
 typedef struct arraybyte ArrayByte;
 
 ArrayByte *createArrayByte(int maxCapacity);
 
-void insertMSBArrayByte(ArrayByte *array, byte bit);
+void insertMSBArrayByte(ArrayByte *array, unsigned char bit);
 
-void insertLSBArrayByte(ArrayByte *array, byte bit);
+void insertLSBArrayByte(ArrayByte *array, unsigned char bit);
 
-void insertByteArrayByte(ArrayByte *array, byte byte);
+void insertByteArrayByte(ArrayByte *array, unsigned char byte);
 
-byte getByteArrayByte(ArrayByte *array, int index);
+unsigned char getByteArrayByte(ArrayByte *array, int index);
 
-byte getBitArrayByte(ArrayByte *array, int index);
+unsigned char getBitArrayByte(ArrayByte *array, int index);
 
-byte *getContentArrayByte(ArrayByte *array);
+unsigned char *getContentArrayByte(ArrayByte *array);
 
 int getBitsLengthArrayByte(ArrayByte *array);
 

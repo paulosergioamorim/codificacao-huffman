@@ -110,20 +110,7 @@ void printHeap(Heap *heap)
     printf("]\n");
 }
 
-Tree *convertToHuffmanTree(Heap *heap)
+int getSizeHeap(Heap *heap)
 {
-    while (heap->size > 1)
-    {
-        Tree *tree1 = popHeap(heap);
-        Tree *tree2 = popHeap(heap);
-        Tree *tree3 = createTree(0, getFrequencyTree(tree1) + getFrequencyTree(tree2));
-        setLeftTree(tree3, tree1);
-        setRightTree(tree3, tree2);
-        pushHeap(heap, tree3);
-    }
-
-    Tree *huffmanTree = popHeap(heap);
-    freeHeap(heap);
-
-    return huffmanTree;
+    return heap->size;
 }

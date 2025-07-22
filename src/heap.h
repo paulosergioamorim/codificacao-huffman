@@ -13,4 +13,4 @@ void freeHeap(Heap *heap);
 
 void printHeap(Heap *heap);
 
-Tree *convertToHuffmanTree(Heap *heap);
+int getSizeHeap(Heap *heap);
