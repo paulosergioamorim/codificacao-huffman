@@ -48,3 +48,20 @@ void freeBitReader(BitReader *br)
 {
     free(br);
 }
+
+int hasNextByteBitReader(BitReader *br)
+{
+    int c = fgetc(br->fp);
+
+    if (c == EOF)
+        return 1;
+
+    ungetc(c, br->fp);
+    return 0;
+}
+
+void clearBufferBitReader(BitReader *br)
+{
+    br->buffer = 0;
+    br->bitsCount = 0;
+}

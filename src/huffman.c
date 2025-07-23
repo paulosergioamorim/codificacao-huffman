@@ -4,24 +4,6 @@
 #include "huffman.h"
 #include "bitreader.h"
 
-Tree *convertToHuffmanTree(Heap *heap)
-{
-    while (getSizeHeap(heap) > 1)
-    {
-        Tree *tree1 = popHeap(heap);
-        Tree *tree2 = popHeap(heap);
-        Tree *tree3 = createTree(0, getFrequencyTree(tree1) + getFrequencyTree(tree2));
-        setLeftTree(tree3, tree1);
-        setRightTree(tree3, tree2);
-        pushHeap(heap, tree3);
-    }
-
-    Tree *huffmanTree = popHeap(heap);
-    freeHeap(heap);
-
-    return huffmanTree;
-}
-
 void helper_convertHuffmanTreeToTable(Tree *tree, ArrayByte **table, int code, int bitsCount)
 {
     if (!tree)
@@ -90,30 +72,4 @@ void saveHuffmanTreeToFile(Tree *tree, FILE *fp)
     helper_saveHuffmanTreeToFile(tree, array);
     fwrite(getContentArrayByte(array), getBytesLengthArrayByte(array), sizeof(unsigned char), fp);
     freeArrayByte(array);
-}
-
-Tree *helper_buildHuffmanTreeFromFile(BitReader *br)
-{
-    int isLeafNode = readBitBitReader(br);
-
-    if (isLeafNode)
-    {
-        unsigned char value = readByteBitReader(br);
-        return createTree(value, 0);
-    }
-
-    Tree *tree = createTree(0, 0);
-
-    setLeftTree(tree, helper_buildHuffmanTreeFromFile(br));
-    setRightTree(tree, helper_buildHuffmanTreeFromFile(br));
-
-    return tree;
-}
-
-Tree *createHuffmanTreeFromFile(FILE *fp)
-{
-    BitReader *br = createBitReader(fp);
-    Tree *huffmanTree = helper_buildHuffmanTreeFromFile(br);
-    freeBitReader(br);
-    return huffmanTree;
 }

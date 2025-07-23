@@ -1,10 +1,18 @@
-#define DECODER_PROGRAM
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include "huffman.h"
 #include "bitreader.h"
+
+typedef Tree *(*table_fn)(Tree *);
+
+static table_fn table[2] = {getLeftTree, getRightTree};
+
+Tree *consumeBit(BitReader *br, FILE *fp, Tree *huffmanTree, Tree *tree);
+
+Tree *createHuffmanTreeFromFile(BitReader *br);
+
+Tree *helper_createHuffmanTreeFromFile(BitReader *br);
 
 int main(int argc, char const *argv[])
 {
@@ -15,37 +23,21 @@ int main(int argc, char const *argv[])
     }
 
     FILE *inputFile = fopen(argv[1], "rb");
-    FILE *outputFile = fopen(argv[2], "w+");
+    FILE *outputFile = fopen(argv[2], "wb");
     assert(inputFile);
     assert(outputFile);
 
-    Tree *huffmanTree = createHuffmanTreeFromFile(inputFile);
+    BitReader *br = createBitReader(inputFile);
+    Tree *huffmanTree = createHuffmanTreeFromFile(br);
     Tree *cur = huffmanTree;
 
-    unsigned int validBits = 0;
-    fread(&validBits, 1, sizeof(unsigned int), inputFile);
+    unsigned char lastValidBits = readByteBitReader(br);
 
-    BitReader *br = createBitReader(inputFile);
+    while (!hasNextByteBitReader(br))
+        cur = consumeBit(br, outputFile, huffmanTree, cur);
 
-    for (int i = 0; i < validBits; i++)
-    {
-        unsigned char bit = readBitBitReader(br);
-
-        if (isLeafTree(cur))
-        {
-            fputc(getValueTree(cur), outputFile);
-            cur = huffmanTree;
-            continue;
-        }
-
-        if (bit)
-        {
-            cur = getRightTree(cur);
-            continue;
-        }
-
-        cur = getLeftTree(cur);
-    }
+    for (unsigned char i = 0; i < lastValidBits; i++)
+        cur = consumeBit(br, outputFile, huffmanTree, cur);
 
     freeBitReader(br);
     freeTree(huffmanTree);
@@ -53,4 +45,44 @@ int main(int argc, char const *argv[])
     fclose(outputFile);
 
     return 0;
+}
+
+Tree *consumeBit(BitReader *br, FILE *fp, Tree *huffmanTree, Tree *tree)
+{
+    unsigned char bit = readBitBitReader(br);
+    Tree *next = table[bit](tree);
+
+    if (isLeafTree(next))
+    {
+        fputc(getValueTree(next), fp);
+        return huffmanTree;
+    }
+
+    return next;
+}
+
+Tree *helper_createHuffmanTreeFromFile(BitReader *br)
+{
+    int isLeafNode = readBitBitReader(br);
+
+    if (isLeafNode)
+    {
+        unsigned char value = readByteBitReader(br);
+        return createTree(value, 0);
+    }
+
+    Tree *tree = createTree(0, 0);
+
+    setLeftTree(tree, helper_createHuffmanTreeFromFile(br));
+    setRightTree(tree, helper_createHuffmanTreeFromFile(br));
+
+    return tree;
+}
+
+Tree *createHuffmanTreeFromFile(BitReader *br)
+{
+    Tree *huffmanTree = helper_createHuffmanTreeFromFile(br);
+    clearBufferBitReader(br);
+
+    return huffmanTree;
 }

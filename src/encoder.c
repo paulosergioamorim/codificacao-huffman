@@ -1,5 +1,3 @@
-#define ENCODER_PROGRAM
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -40,7 +38,7 @@ int main(int argc, char const *argv[])
     Tree *huffmanTree = convertToHuffmanTree(heap);
     ArrayByte **table = convertHuffmanTreeToTable(huffmanTree);
 
-    FILE *outputFile = fopen(argv[2], "wb+");
+    FILE *outputFile = fopen(argv[2], "wb");
     assert(outputFile);
 
     ArrayByte *contentArrayByte = createArrayByte(ftell(inputFile) * 8);
@@ -53,6 +51,7 @@ int main(int argc, char const *argv[])
     {
         ArrayByte *array = table[c];
         int length = getBitsLengthArrayByte(array);
+
         for (int i = 0; i < length; i++)
             insertLSBArrayByte(contentArrayByte, getBitArrayByte(array, i));
     }
@@ -60,10 +59,12 @@ int main(int argc, char const *argv[])
     freeEncodingTable(table);
     fclose(inputFile);
 
-    unsigned int bitsLength = getBitsLengthArrayByte(contentArrayByte);
+    unsigned char lastValidBits = getBitsLengthArrayByte(contentArrayByte) % 8;
+    unsigned char *encodedContent = getContentArrayByte(contentArrayByte);
+    int bytesLength = getBytesLengthArrayByte(contentArrayByte);
 
-    fwrite(&bitsLength, 1, sizeof(unsigned int), outputFile);
-    fwrite(getContentArrayByte(contentArrayByte), getBytesLengthArrayByte(contentArrayByte), sizeof(unsigned char), outputFile);
+    fwrite(&lastValidBits, 1, sizeof(lastValidBits), outputFile);
+    fwrite(encodedContent, bytesLength, sizeof(unsigned char), outputFile);
 
     fclose(outputFile);
     freeArrayByte(contentArrayByte);
