@@ -1,19 +1,19 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include <math.h>
-#include "arraybyte.h"
+#include "bitarray.h"
 
-struct arraybyte
+struct bitarray
 {
     unsigned char *vec;
     int capacity;
     int size;
 };
 
-ArrayByte *createArrayByte(int capacity)
+BitArray *createStaticBitArray(int capacity)
 {
-    ArrayByte *array = malloc(sizeof(ArrayByte));
+    BitArray *array = malloc(sizeof(BitArray));
     assert(array);
     array->capacity = capacity;
     array->size = 0;
@@ -23,9 +23,14 @@ ArrayByte *createArrayByte(int capacity)
     return array;
 }
 
-void insertMSBArrayByte(ArrayByte *array, unsigned char bit)
+void insertMSBBitArray(BitArray *array, unsigned char bit)
 {
-    assert(array->size < array->capacity);
+    if (array->size == array->capacity)
+    {
+        fprintf(stderr, "Overflow in bit array.\n");
+        exit(EXIT_FAILURE);
+    }
+
     bit &= 0x80;
     int indexOfByte = array->size / 8;
     int indexOfBit = array->size % 8;
@@ -34,9 +39,14 @@ void insertMSBArrayByte(ArrayByte *array, unsigned char bit)
     array->size++;
 }
 
-void insertLSBArrayByte(ArrayByte *array, unsigned char bit)
+void insertLSBBitArray(BitArray *array, unsigned char bit)
 {
-    assert(array->size < array->capacity);
+    if (array->size == array->capacity)
+    {
+        fprintf(stderr, "Overflow in bit array.\n");
+        exit(EXIT_FAILURE);
+    }
+
     bit &= 0x01;
     int indexOfByte = array->size / 8;
     int indexOfBit = array->size % 8;
@@ -47,34 +57,36 @@ void insertLSBArrayByte(ArrayByte *array, unsigned char bit)
     array->size++;
 }
 
-void insertByteArrayByte(ArrayByte *array, unsigned char byte)
+void insertByteBitArray(BitArray *array, unsigned char byte)
 {
     for (int i = 0; i < 8; i++)
-        insertMSBArrayByte(array, byte << i);
+        insertMSBBitArray(array, byte << i);
 }
 
-unsigned char *getContentArrayByte(ArrayByte *array)
+unsigned char *getContentBitArray(BitArray *array)
 {
     return array->vec;
 }
 
-int getBitsLengthArrayByte(ArrayByte *array)
+int getBitsLengthBitArray(BitArray *array)
 {
     return array->size;
 }
 
-int getBytesLengthArrayByte(ArrayByte *array)
+int getBytesLengthBitArray(BitArray *array)
 {
     return (array->size + 7) / 8;
 }
 
-void freeArrayByte(ArrayByte *array)
+void freeBitArray(BitArray *array)
 {
+    assert(array);
+    assert(array->vec);
     free(array->vec);
     free(array);
 }
 
-unsigned char getByteArrayByte(ArrayByte *array, int index)
+unsigned char getByteBitArray(BitArray *array, int index)
 {
     if (index >= (array->size + 7) / 8)
         return 0;
@@ -82,7 +94,7 @@ unsigned char getByteArrayByte(ArrayByte *array, int index)
     return array->vec[index];
 }
 
-unsigned char getBitArrayByte(ArrayByte *array, int index)
+unsigned char getBitArray(BitArray *array, int index)
 {
     if (index >= array->size)
         return 0;

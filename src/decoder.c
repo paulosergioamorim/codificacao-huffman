@@ -28,12 +28,11 @@ int main(int argc, char const *argv[])
     assert(outputFile);
 
     BitReader *br = createBitReader(inputFile);
+    unsigned char lastValidBits = readByteBitReader(br);
     Tree *huffmanTree = createHuffmanTreeFromFile(br);
     Tree *cur = huffmanTree;
 
-    unsigned char lastValidBits = readByteBitReader(br);
-
-    while (!hasNextByteBitReader(br))
+    while (hasNextByteBitReader(br))
         cur = consumeBit(br, outputFile, huffmanTree, cur);
 
     for (unsigned char i = 0; i < lastValidBits; i++)
@@ -81,8 +80,5 @@ Tree *helper_createHuffmanTreeFromFile(BitReader *br)
 
 Tree *createHuffmanTreeFromFile(BitReader *br)
 {
-    Tree *huffmanTree = helper_createHuffmanTreeFromFile(br);
-    clearBufferBitReader(br);
-
-    return huffmanTree;
+    return helper_createHuffmanTreeFromFile(br);
 }

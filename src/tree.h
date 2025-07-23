@@ -1,7 +1,5 @@
 #pragma once
 
-#include "arraybyte.h"
-
 typedef struct tree Tree;
 
 Tree *createTree(unsigned char value, int frequency);

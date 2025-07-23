@@ -54,10 +54,10 @@ int hasNextByteBitReader(BitReader *br)
     int c = fgetc(br->fp);
 
     if (c == EOF)
-        return 1;
+        return 0;
 
     ungetc(c, br->fp);
-    return 0;
+    return 1;
 }
 
 void clearBufferBitReader(BitReader *br)

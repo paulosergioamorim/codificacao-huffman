@@ -36,38 +36,40 @@ int main(int argc, char const *argv[])
         }
 
     Tree *huffmanTree = convertToHuffmanTree(heap);
-    ArrayByte **table = convertHuffmanTreeToTable(huffmanTree);
+    BitArray **table = convertHuffmanTreeToTable(huffmanTree);
 
     FILE *outputFile = fopen(argv[2], "wb");
     assert(outputFile);
 
-    ArrayByte *contentArrayByte = createArrayByte(ftell(inputFile) * 8);
+    int serializedHuffmanTreeSize = getNodesCountTree(huffmanTree) + 8 * (getLeafNodesCountTree(huffmanTree));
+    float expectedHeight = getExpectedHeightHuffmanTree(ftell(inputFile), huffmanTree);
+    BitArray *contentArrayByte = createStaticBitArray(serializedHuffmanTreeSize + ftell(inputFile) * expectedHeight);
     rewind(inputFile);
 
-    saveHuffmanTreeToFile(huffmanTree, outputFile);
+    serializeHuffmanTree(huffmanTree, contentArrayByte);
     freeTree(huffmanTree);
 
     while (fscanf(inputFile, "%c", &c) != EOF)
     {
-        ArrayByte *array = table[c];
-        int length = getBitsLengthArrayByte(array);
+        BitArray *array = table[c];
+        int length = getBitsLengthBitArray(array);
 
         for (int i = 0; i < length; i++)
-            insertLSBArrayByte(contentArrayByte, getBitArrayByte(array, i));
+            insertLSBBitArray(contentArrayByte, getBitArray(array, i));
     }
 
     freeEncodingTable(table);
     fclose(inputFile);
 
-    unsigned char lastValidBits = getBitsLengthArrayByte(contentArrayByte) % 8;
-    unsigned char *encodedContent = getContentArrayByte(contentArrayByte);
-    int bytesLength = getBytesLengthArrayByte(contentArrayByte);
+    unsigned char lastValidBits = getBitsLengthBitArray(contentArrayByte) % 8;
+    unsigned char *encodedContent = getContentBitArray(contentArrayByte);
+    int bytesLength = getBytesLengthBitArray(contentArrayByte);
 
     fwrite(&lastValidBits, 1, sizeof(lastValidBits), outputFile);
     fwrite(encodedContent, bytesLength, sizeof(unsigned char), outputFile);
 
     fclose(outputFile);
-    freeArrayByte(contentArrayByte);
+    freeBitArray(contentArrayByte);
 
     return 0;
 }

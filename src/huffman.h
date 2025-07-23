@@ -2,15 +2,15 @@
 
 #include "tree.h"
 #include "heap.h"
-#include "arraybyte.h"
+#include "bitarray.h"
 #include <stdio.h>
 
 Tree *convertToHuffmanTree(Heap *heap);
 
-ArrayByte **convertHuffmanTreeToTable(Tree *tree);
+BitArray **convertHuffmanTreeToTable(Tree *tree);
 
-void freeEncodingTable(ArrayByte **table);
+void freeEncodingTable(BitArray **table);
 
-void saveHuffmanTreeToFile(Tree *tree, FILE *fp);
+void serializeHuffmanTree(Tree *tree, BitArray *array);
 
-Tree *createHuffmanTreeFromFile(FILE *fp);
+float getExpectedHeightHuffmanTree(int totalBytes, Tree *tree);

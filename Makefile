@@ -5,7 +5,7 @@ DEBUG_FLAGS = -g -O0 -DDEBUG
 SRC = ./src
 
 COMMON_SOURCES = $(SRC)/tree.c $(SRC)/bitreader.c
-ENCODER_SOURCES = $(SRC)/heap.c $(SRC)/arraybyte.c $(SRC)/huffman.c
+ENCODER_SOURCES = $(SRC)/heap.c $(SRC)/bitarray.c $(SRC)/huffman.c
 
 # Default build (release)
 all: encoder decoder
