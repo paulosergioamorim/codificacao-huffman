@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include "bitarray.h"
+#include <stdint.h>
 
 struct bitarray
 {
@@ -15,7 +16,7 @@ BitArray *createStaticBitArray(int capacity)
 {
     BitArray *array = malloc(sizeof(BitArray));
     assert(array);
-    array->capacity = capacity;
+    array->capacity = ++capacity;
     array->size = 0;
     array->vec = calloc((array->capacity + 7) / 8, sizeof(unsigned char));
     assert(array->vec);
@@ -25,9 +26,10 @@ BitArray *createStaticBitArray(int capacity)
 
 void insertMSBBitArray(BitArray *array, unsigned char bit)
 {
+    assert(array);
     if (array->size == array->capacity)
     {
-        fprintf(stderr, "Overflow in bit array.\n");
+        fprintf(stderr, "Overflow in bit array in %dth bit.\n", array->size);
         exit(EXIT_FAILURE);
     }
 
@@ -41,9 +43,10 @@ void insertMSBBitArray(BitArray *array, unsigned char bit)
 
 void insertLSBBitArray(BitArray *array, unsigned char bit)
 {
+    assert(array);
     if (array->size == array->capacity)
     {
-        fprintf(stderr, "Overflow in bit array.\n");
+        fprintf(stderr, "Overflow in bit array in %dth bit.\n", array->size);
         exit(EXIT_FAILURE);
     }
 
@@ -59,22 +62,26 @@ void insertLSBBitArray(BitArray *array, unsigned char bit)
 
 void insertByteBitArray(BitArray *array, unsigned char byte)
 {
+    assert(array);
     for (int i = 0; i < 8; i++)
         insertMSBBitArray(array, byte << i);
 }
 
 unsigned char *getContentBitArray(BitArray *array)
 {
+    assert(array);
     return array->vec;
 }
 
 int getBitsLengthBitArray(BitArray *array)
 {
+    assert(array);
     return array->size;
 }
 
 int getBytesLengthBitArray(BitArray *array)
 {
+    assert(array);
     return (array->size + 7) / 8;
 }
 
@@ -88,6 +95,8 @@ void freeBitArray(BitArray *array)
 
 unsigned char getByteBitArray(BitArray *array, int index)
 {
+    assert(array);
+    assert(array->vec);
     if (index >= (array->size + 7) / 8)
         return 0;
 
@@ -96,6 +105,8 @@ unsigned char getByteBitArray(BitArray *array, int index)
 
 unsigned char getBitArray(BitArray *array, int index)
 {
+    assert(array);
+    assert(array->vec);
     if (index >= array->size)
         return 0;
 

@@ -5,32 +5,20 @@ DEBUG_FLAGS = -g -O0 -DDEBUG
 SRC = ./src
 
 COMMON_SOURCES = $(SRC)/tree.c $(SRC)/bitreader.c
-ENCODER_SOURCES = $(SRC)/heap.c $(SRC)/bitarray.c $(SRC)/huffman.c
+COMPACTA_SOURCES = $(SRC)/heap.c $(SRC)/bitarray.c $(SRC)/huffman.c
 
-# Default build (release)
-all: encoder decoder
+all: compacta descompacta
 
-# Release builds
-encoder: $(SRC)/encoder.c $(COMMON_SOURCES) $(ENCODER_SOURCES)
+compacta: $(SRC)/compacta.c $(COMMON_SOURCES) $(COMPACTA_SOURCES)
 	$(CC) $^ -o $@ $(CFLAGS) $(RELEASE_FLAGS)
 
-decoder: $(SRC)/decoder.c $(COMMON_SOURCES)
+descompacta: $(SRC)/descompacta.c $(COMMON_SOURCES)
 	$(CC) $^ -o $@ $(CFLAGS) $(RELEASE_FLAGS)
 
-# Debug builds
 debug: CFLAGS += $(DEBUG_FLAGS)
-debug: encoder_debug decoder_debug
+debug: all
 
-encoder_debug: $(SRC)/encoder.c $(COMMON_SOURCES) $(ENCODER_SOURCES)
-	$(CC) $^ -o $@ $(CFLAGS)
-	@echo "Built debug version: encoder_debug"
-
-decoder_debug: $(SRC)/decoder.c $(COMMON_SOURCES)
-	$(CC) $^ -o $@ $(CFLAGS)
-	@echo "Built debug version: decoder_debug"
-
-# Clean
 clean:
-	rm -f encoder decoder encoder_debug decoder_debug
+	rm -f compacta descompacta
 
 .PHONY: all clean debug

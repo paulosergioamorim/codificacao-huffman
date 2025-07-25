@@ -6,6 +6,15 @@
 
 Tree *convertToHuffmanTree(Heap *heap)
 {
+    if (getSizeHeap(heap) == 1)
+    {
+        Tree *tree = popHeap(heap);
+        freeHeap(heap);
+        heap = createHeap(3);
+        pushHeap(heap, tree);
+        pushHeap(heap, createTree(0, 0));
+    }
+
     while (getSizeHeap(heap) > 1)
     {
         Tree *tree1 = popHeap(heap);
@@ -45,10 +54,10 @@ void helper_convertHuffmanTreeToTable(Tree *tree, BitArray **table, int code, in
 BitArray **convertHuffmanTreeToTable(Tree *tree)
 {
     assert(tree);
-    BitArray **table = calloc(UCHAR_MAX, sizeof(BitArray *));
+    BitArray **table = calloc(UCHAR_MAX + 1, sizeof(BitArray *));
     assert(table);
 
-    helper_convertHuffmanTreeToTable(tree, table, 1, 0);
+    helper_convertHuffmanTreeToTable(tree, table, 0, 0);
 
     return table;
 }
@@ -56,7 +65,7 @@ BitArray **convertHuffmanTreeToTable(Tree *tree)
 void freeEncodingTable(BitArray **table)
 {
     assert(table);
-    for (int i = 0; i < UCHAR_MAX; i++)
+    for (int i = 0; i < UCHAR_MAX + 1; i++)
         if (table[i])
             freeBitArray(table[i]);
 
@@ -87,15 +96,23 @@ void serializeHuffmanTree(Tree *tree, BitArray *array)
     helper_serializeHuffmanTree(tree, array);
 }
 
-float helper_getExpectedHeight(int totalBytes, Tree *tree, int height)
+int getSerializedHuffmanTreeSize(Tree *tree)
 {
+    return getNodesCountTree(tree) + 8 * (getLeafNodesCountTree(tree));
+}
+
+double helper_getExpectedHeight(int totalBytes, Tree *tree, int height)
+{
+    if (!tree)
+        return 0;
+
     if (isLeafTree(tree))
-        return (float)(height * getFrequencyTree(tree)) / totalBytes;
+        return (double)(height * getFrequencyTree(tree)) / totalBytes;
 
     return helper_getExpectedHeight(totalBytes, getLeftTree(tree), height + 1) + helper_getExpectedHeight(totalBytes, getRightTree(tree), height + 1);
 }
 
-float getExpectedHeightHuffmanTree(int totalBytes, Tree *tree)
+double getExpectedHeightHuffmanTree(int totalBytes, Tree *tree)
 {
     return helper_getExpectedHeight(totalBytes, tree, 0);
 }

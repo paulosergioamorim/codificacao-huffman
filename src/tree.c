@@ -50,8 +50,7 @@ Tree *getRightTree(Tree *tree)
 
 int isLeafTree(Tree *tree)
 {
-    assert(tree);
-    return !tree->left && !tree->right;
+    return tree && !tree->left && !tree->right;
 }
 
 int getNodesCountTree(Tree *tree)

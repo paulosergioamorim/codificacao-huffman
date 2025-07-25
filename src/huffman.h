@@ -13,4 +13,6 @@ void freeEncodingTable(BitArray **table);
 
 void serializeHuffmanTree(Tree *tree, BitArray *array);
 
-float getExpectedHeightHuffmanTree(int totalBytes, Tree *tree);
+double getExpectedHeightHuffmanTree(int totalBytes, Tree *tree);
+
+int getSerializedHuffmanTreeSize(Tree *tree);
