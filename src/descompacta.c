@@ -41,7 +41,7 @@ int main(int argc, char const *argv[])
         fclose(outputFile);
         free(outputFileName);
         return 0;
-    }
+    } // caso: arquivo vazio
 
     Tree *huffmanTree = createHuffmanTreeFromFile(br, &lastValidBits);
     Tree *cur = huffmanTree;
@@ -61,20 +61,23 @@ int main(int argc, char const *argv[])
 int consumeBit(BitReader *br, FILE *fp, Tree *huffmanTree, Tree **tree, unsigned char lastValidBits)
 {
     unsigned char bit = readBitBitReader(br);
-    Tree *next = table[bit](*tree);
+    Tree *next = *tree;
 
     if (!hasNextByteBitReader(br))
         lastValidBits--;
 
-    if (isLeafTree(next))
-    {
-        fputc(getValueTree(next), fp);
-        *tree = huffmanTree;
+    if (!isLeafTree(huffmanTree))
+        next = table[bit](next); // caso: raiz da árvore de huffman não é uma folha
 
+    if (!isLeafTree(next))
+    {
+        *tree = next;
         return lastValidBits;
     }
 
-    *tree = next;
+    unsigned char value = getValueTree(next);
+    fwrite(&value, sizeof(value), 1, fp);
+    *tree = huffmanTree;
 
     return lastValidBits;
 }
@@ -88,7 +91,7 @@ Tree *helper_createHuffmanTreeFromFile(BitReader *br, unsigned char *lastValidBi
         unsigned char value = readByteBitReader(br);
 
         if (!hasNextByteBitReader(br))
-            *lastValidBits -= getReadedBitsBitReader(br);
+            *lastValidBits -= getReadedBitsBitReader(br); // caso: a árvore de huffman ocupou o último byte
 
         return createTree(value, 0);
     }

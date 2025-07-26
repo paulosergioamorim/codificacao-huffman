@@ -6,15 +6,6 @@
 
 Tree *convertToHuffmanTree(Heap *heap)
 {
-    if (getSizeHeap(heap) == 1)
-    {
-        Tree *tree = popHeap(heap);
-        freeHeap(heap);
-        heap = createHeap(3);
-        pushHeap(heap, tree);
-        pushHeap(heap, createTree(0, 0));
-    }
-
     while (getSizeHeap(heap) > 1)
     {
         Tree *tree1 = popHeap(heap);
@@ -31,7 +22,7 @@ Tree *convertToHuffmanTree(Heap *heap)
     return huffmanTree;
 }
 
-void helper_convertHuffmanTreeToTable(Tree *tree, BitArray **table, int code, int bitsCount)
+void helper_convertHuffmanTreeToTable(Tree *tree, BitArray **table, unsigned int code, int bitsCount)
 {
     if (!tree)
         return;
@@ -48,7 +39,7 @@ void helper_convertHuffmanTreeToTable(Tree *tree, BitArray **table, int code, in
     assert(table[value]);
 
     for (int i = bitsCount - 1; i >= 0; i--)
-        insertLSBBitArray(table[value], code >> i);
+        insertLSBBitArray(table[value], (unsigned char)(code >> i));
 }
 
 BitArray **convertHuffmanTreeToTable(Tree *tree)
@@ -65,7 +56,7 @@ BitArray **convertHuffmanTreeToTable(Tree *tree)
 void freeEncodingTable(BitArray **table)
 {
     assert(table);
-    for (int i = 0; i < UCHAR_MAX + 1; i++)
+    for (int i = 0; i <= UCHAR_MAX; i++)
         if (table[i])
             freeBitArray(table[i]);
 
