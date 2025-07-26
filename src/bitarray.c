@@ -8,15 +8,15 @@
 struct bitarray
 {
     unsigned char *vec;
-    int capacity;
-    int size;
+    unsigned int capacity;
+    unsigned int size;
 };
 
-BitArray *createStaticBitArray(int capacity)
+BitArray *createStaticBitArray(unsigned int capacity)
 {
     BitArray *array = malloc(sizeof(BitArray));
     assert(array);
-    array->capacity = ++capacity;
+    array->capacity = capacity;
     array->size = 0;
     array->vec = calloc((array->capacity + 7) / 8, sizeof(unsigned char));
     assert(array->vec);
@@ -34,7 +34,7 @@ void insertMSBBitArray(BitArray *array, unsigned char bit)
     }
 
     bit &= 0x80;
-    int indexOfByte = array->size / 8;
+    unsigned int indexOfByte = array->size / 8;
     int indexOfBit = array->size % 8;
     bit >>= indexOfBit;
     array->vec[indexOfByte] |= bit;
@@ -51,7 +51,7 @@ void insertLSBBitArray(BitArray *array, unsigned char bit)
     }
 
     bit &= 0x01;
-    int indexOfByte = array->size / 8;
+    unsigned int indexOfByte = array->size / 8;
     int indexOfBit = array->size % 8;
     int shift = 7 - indexOfBit;
 
@@ -73,13 +73,13 @@ unsigned char *getContentBitArray(BitArray *array)
     return array->vec;
 }
 
-int getBitsLengthBitArray(BitArray *array)
+unsigned int getBitsLengthBitArray(BitArray *array)
 {
     assert(array);
     return array->size;
 }
 
-int getBytesLengthBitArray(BitArray *array)
+unsigned int getBytesLengthBitArray(BitArray *array)
 {
     assert(array);
     return (array->size + 7) / 8;
@@ -93,7 +93,7 @@ void freeBitArray(BitArray *array)
     free(array);
 }
 
-unsigned char getByteBitArray(BitArray *array, int index)
+unsigned char getByteBitArray(BitArray *array, unsigned int index)
 {
     assert(array);
     assert(array->vec);
@@ -103,7 +103,7 @@ unsigned char getByteBitArray(BitArray *array, int index)
     return array->vec[index];
 }
 
-unsigned char getBitArray(BitArray *array, int index)
+unsigned char getBitArray(BitArray *array, unsigned int index)
 {
     assert(array);
     assert(array->vec);

@@ -52,7 +52,7 @@ int main(int argc, char const *argv[])
         return 0;
     } // caso: arquivo vazio
 
-    int totalBytes = ftell(inputFile);
+    long totalBytes = ftell(inputFile);
     int serializedHuffmanTreeSize = getSerializedHuffmanTreeSize(huffmanTree);
     double expectedHeight = getExpectedHeightHuffmanTree(totalBytes, huffmanTree);
 
@@ -60,7 +60,7 @@ int main(int argc, char const *argv[])
         expectedHeight = 1; // caso: árvore de huffman sendo a raiz folha
 
     BitArray **table = convertHuffmanTreeToTable(huffmanTree);
-    BitArray *contentArrayByte = createStaticBitArray(serializedHuffmanTreeSize + (int)(totalBytes * expectedHeight));
+    BitArray *contentArrayByte = createStaticBitArray(serializedHuffmanTreeSize + totalBytes * expectedHeight + 0.1);
 
     rewind(inputFile);
     serializeHuffmanTree(huffmanTree, contentArrayByte);
@@ -69,12 +69,12 @@ int main(int argc, char const *argv[])
     while (fread(&c, sizeof(c), 1, inputFile))
     {
         BitArray *array = table[c];
-        int length = getBitsLengthBitArray(array);
+        unsigned int length = getBitsLengthBitArray(array);
 
         if (!length)
             insertLSBBitArray(contentArrayByte, 0); // caso: árvore de huffman sendo a raiz folha
 
-        for (int i = 0; i < length; i++)
+        for (unsigned int i = 0; i < length; i++)
             insertLSBBitArray(contentArrayByte, getBitArray(array, i));
     }
 
@@ -87,7 +87,7 @@ int main(int argc, char const *argv[])
         lastValidBits = 8; // caso: todos os bits do último byte são válidos
 
     unsigned char *encodedContent = getContentBitArray(contentArrayByte);
-    int bytesLength = getBytesLengthBitArray(contentArrayByte);
+    unsigned int bytesLength = getBytesLengthBitArray(contentArrayByte);
 
     fwrite(&lastValidBits, sizeof(lastValidBits), 1, outputFile);
     fwrite(encodedContent, sizeof(unsigned char), bytesLength, outputFile);

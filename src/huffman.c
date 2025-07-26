@@ -92,7 +92,7 @@ int getSerializedHuffmanTreeSize(Tree *tree)
     return getNodesCountTree(tree) + 8 * (getLeafNodesCountTree(tree));
 }
 
-double helper_getExpectedHeight(int totalBytes, Tree *tree, int height)
+double helper_getExpectedHeight(long totalBytes, Tree *tree, int height)
 {
     if (!tree)
         return 0;
@@ -103,7 +103,7 @@ double helper_getExpectedHeight(int totalBytes, Tree *tree, int height)
     return helper_getExpectedHeight(totalBytes, getLeftTree(tree), height + 1) + helper_getExpectedHeight(totalBytes, getRightTree(tree), height + 1);
 }
 
-double getExpectedHeightHuffmanTree(int totalBytes, Tree *tree)
+double getExpectedHeightHuffmanTree(long totalBytes, Tree *tree)
 {
     return helper_getExpectedHeight(totalBytes, tree, 0);
 }
