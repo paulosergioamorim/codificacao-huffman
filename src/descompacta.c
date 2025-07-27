@@ -15,8 +15,6 @@ int consumeBit(BitReader *br, unsigned char *buffer, int *bufferCount, Tree *huf
 
 Tree *createHuffmanTreeFromFile(BitReader *br, unsigned char *lastValidBits);
 
-Tree *helper_createHuffmanTreeFromFile(BitReader *br, unsigned char *lastValidBits);
-
 int main(int argc, char const *argv[])
 {
     if (argc < 2)
@@ -95,7 +93,7 @@ int consumeBit(BitReader *br, unsigned char *buffer, int *bufferCount, Tree *huf
     return lastValidBits;
 }
 
-Tree *helper_createHuffmanTreeFromFile(BitReader *br, unsigned char *lastValidBits)
+Tree *createHuffmanTreeFromFile(BitReader *br, unsigned char *lastValidBits)
 {
     int isLeafNode = readBitBitReader(br);
 
@@ -111,13 +109,8 @@ Tree *helper_createHuffmanTreeFromFile(BitReader *br, unsigned char *lastValidBi
 
     Tree *tree = createTree(0, 0);
 
-    setLeftTree(tree, helper_createHuffmanTreeFromFile(br, lastValidBits));
-    setRightTree(tree, helper_createHuffmanTreeFromFile(br, lastValidBits));
+    setLeftTree(tree, createHuffmanTreeFromFile(br, lastValidBits));
+    setRightTree(tree, createHuffmanTreeFromFile(br, lastValidBits));
 
     return tree;
-}
-
-Tree *createHuffmanTreeFromFile(BitReader *br, unsigned char *lastValidBits)
-{
-    return helper_createHuffmanTreeFromFile(br, lastValidBits);
 }
