@@ -53,14 +53,6 @@ int isLeafTree(Tree *tree)
     return tree && !tree->left && !tree->right;
 }
 
-int getNodesCountTree(Tree *tree)
-{
-    if (!tree)
-        return 0;
-
-    return 1 + getNodesCountTree(tree->left) + getNodesCountTree(tree->right);
-}
-
 int getLeafNodesCountTree(Tree *tree)
 {
     if (!tree)
@@ -99,20 +91,6 @@ int compareTrees(Tree *tree1, Tree *tree2)
     assert(tree1);
     assert(tree2);
     return tree1->frequency >= tree2->frequency;
-}
-
-int getHeightTree(Tree *tree)
-{
-    if (!tree)
-        return 0;
-
-    int leftHeight = 1 + getHeightTree(tree->left);
-    int rightHeight = 1 + getHeightTree(tree->right);
-
-    if (leftHeight >= rightHeight)
-        return leftHeight;
-
-    return rightHeight;
 }
 
 void printTree(Tree *tree)

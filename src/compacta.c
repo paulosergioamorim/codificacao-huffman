@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <limits.h>
+#include <math.h>
 #include <string.h>
 #include "huffman.h"
 
@@ -45,8 +46,6 @@ int main(int argc, char const *argv[])
 
     if (!huffmanTree)
     {
-        unsigned char value = 0;
-        fwrite(&value, 1, sizeof(value), outputFile);
         fclose(inputFile);
         fclose(outputFile);
         return 0;
@@ -54,46 +53,79 @@ int main(int argc, char const *argv[])
 
     long totalBytes = ftell(inputFile);
     int serializedHuffmanTreeSize = getSerializedHuffmanTreeSize(huffmanTree);
-    double expectedHeight = getExpectedHeightHuffmanTree(totalBytes, huffmanTree);
 
-    if (!expectedHeight)
-        expectedHeight = 1; // caso: árvore de huffman sendo a raiz folha
+    BitArray *array;
 
-    BitArray **table = convertHuffmanTreeToTable(huffmanTree);
-    BitArray *contentArrayByte = createStaticBitArray(serializedHuffmanTreeSize + totalBytes * expectedHeight + 0.1);
+    if (isLeafTree(huffmanTree))
+    {
+        array = createStaticBitArray(serializedHuffmanTreeSize + totalBytes);
+        serializeHuffmanTree(huffmanTree, array);
+        freeTree(huffmanTree);
 
-    rewind(inputFile);
-    serializeHuffmanTree(huffmanTree, contentArrayByte);
+        for (long i = 0; i < totalBytes; i++)
+            insertLSBBitArray(array, 0);
+
+        unsigned char lastValidBits = getBitsLengthBitArray(array) % 8;
+
+        if (!lastValidBits)
+            lastValidBits = 8; // caso: todos os bits do último byte são válidos
+
+        unsigned char *encodedContent = getContentBitArray(array);
+        unsigned int bytesLength = getBytesLengthBitArray(array);
+
+        fwrite(encodedContent, sizeof(unsigned char), bytesLength, outputFile);
+        fwrite(&lastValidBits, sizeof(lastValidBits), 1, outputFile);
+        freeBitArray(array);
+        fclose(inputFile);
+        fclose(outputFile);
+        return 0;
+    } // caso: árvore de huffman sendo a raiz folha
+
+    unsigned int *table = convertHuffmanTreeToTable(huffmanTree);
+
+    fseek(inputFile, 0, SEEK_SET);
+
+    array = createStaticBitArray(8 * 1024);
+    serializeHuffmanTree(huffmanTree, array);
     freeTree(huffmanTree);
 
     while (fread(&c, sizeof(c), 1, inputFile))
     {
-        BitArray *array = table[c];
-        unsigned int length = getBitsLengthBitArray(array);
+        unsigned int code = table[c];
+        int len = log2(code);
 
-        if (!length)
-            insertLSBBitArray(contentArrayByte, 0); // caso: árvore de huffman sendo a raiz folha
+        for (int i = len - 1; i >= 0; i--)
+        {
+            if (!isFullBitArray(array))
+            {
+                insertLSBBitArray(array, code >> i);
+                continue;
+            }
 
-        for (unsigned int i = 0; i < length; i++)
-            insertLSBBitArray(contentArrayByte, getBitArray(array, i));
+            unsigned int bytesLength = getBytesLengthBitArray(array);
+            unsigned char *encodedContent = getContentBitArray(array);
+            fwrite(encodedContent, sizeof(unsigned char), bytesLength, outputFile);
+            clearBitArray(array);
+            insertLSBBitArray(array, code >> i);
+        }
     }
 
     freeEncodingTable(table);
     fclose(inputFile);
 
-    unsigned char lastValidBits = getBitsLengthBitArray(contentArrayByte) % 8;
+    unsigned char lastValidBits = getBitsLengthBitArray(array) % 8;
 
     if (!lastValidBits)
         lastValidBits = 8; // caso: todos os bits do último byte são válidos
 
-    unsigned char *encodedContent = getContentBitArray(contentArrayByte);
-    unsigned int bytesLength = getBytesLengthBitArray(contentArrayByte);
+    unsigned char *encodedContent = getContentBitArray(array);
+    unsigned int bytesLength = getBytesLengthBitArray(array);
 
-    fwrite(&lastValidBits, sizeof(lastValidBits), 1, outputFile);
     fwrite(encodedContent, sizeof(unsigned char), bytesLength, outputFile);
+    fwrite(&lastValidBits, sizeof(lastValidBits), 1, outputFile);
 
     fclose(outputFile);
-    freeBitArray(contentArrayByte);
+    freeBitArray(array);
 
     return 0;
 }

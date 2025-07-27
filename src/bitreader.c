@@ -1,11 +1,12 @@
 #include "bitreader.h"
 #include <stdlib.h>
-#include <assert.h>
 
 struct bitreader
 {
     FILE *fp;
     unsigned char buffer;
+    long pos;
+    long totalBytes;
     int bitsCount;
 };
 
@@ -13,8 +14,11 @@ BitReader *createBitReader(FILE *fp)
 {
     BitReader *br = malloc(sizeof(BitReader));
     br->fp = fp;
-    br->bitsCount = 0;
-    br->buffer = 0;
+    br->bitsCount = br->buffer = br->pos = 0;
+    long cur_pos = ftell(fp);
+    fseek(fp, 0, SEEK_END);
+    br->totalBytes = ftell(fp);
+    fseek(fp, cur_pos, SEEK_SET);
 
     return br;
 }
@@ -25,8 +29,10 @@ unsigned char readBitBitReader(BitReader *br)
     {
         br->bitsCount = 8;
 
-        if (fread(&br->buffer, sizeof(br->buffer), 1, br->fp) == (size_t)EOF)
-            printf("Fim do arquivo.\n");
+        if (!fread(&br->buffer, sizeof(br->buffer), 1, br->fp))
+            return 0;
+
+        br->pos++;
     }
 
     unsigned char value = (br->buffer >> 7) & 0x01;
@@ -53,13 +59,7 @@ void freeBitReader(BitReader *br)
 
 int hasNextByteBitReader(BitReader *br)
 {
-    int c1 = fgetc(br->fp);
-
-    if (c1 == EOF)
-        return 0;
-
-    ungetc(c1, br->fp);
-    return 1;
+    return br->pos != br->totalBytes - 1;
 }
 
 int getReadedBitsBitReader(BitReader *br)

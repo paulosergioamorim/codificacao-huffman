@@ -7,12 +7,10 @@
 
 Tree *convertToHuffmanTree(Heap *heap);
 
-BitArray **convertHuffmanTreeToTable(Tree *tree);
+unsigned int *convertHuffmanTreeToTable(Tree *tree);
 
-void freeEncodingTable(BitArray **table);
+void freeEncodingTable(unsigned int *table);
 
 void serializeHuffmanTree(Tree *tree, BitArray *array);
-
-double getExpectedHeightHuffmanTree(long totalBytes, Tree *tree);
 
 int getSerializedHuffmanTreeSize(Tree *tree);

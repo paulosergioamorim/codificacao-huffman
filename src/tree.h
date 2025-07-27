@@ -14,8 +14,6 @@ Tree *getRightTree(Tree *tree);
 
 int isLeafTree(Tree *tree);
 
-int getNodesCountTree(Tree *tree);
-
 int getLeafNodesCountTree(Tree *tree);
 
 unsigned char getValueTree(Tree *tree);
@@ -25,7 +23,5 @@ int getFrequencyTree(Tree *tree);
 void freeTree(Tree *tree);
 
 int compareTrees(Tree *tree1, Tree *tree2);
-
-int getHeightTree(Tree *tree);
 
 void printTree(Tree *tree);

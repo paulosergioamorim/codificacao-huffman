@@ -86,9 +86,7 @@ void freeHeap(Heap *heap)
     assert(heap);
 
     for (int i = 0; i < heap->size; i++)
-    {
         freeTree(heap->vec[i]);
-    }
 
     free(heap->vec);
     free(heap);
@@ -101,10 +99,10 @@ void printHeap(Heap *heap)
     for (int i = 0; i < heap->size; i++)
     {
         Tree *tree = heap->vec[i];
-        printf("(%c, %d)", getValueTree(tree), getFrequencyTree(tree));
+        printf("%c", getValueTree(tree));
 
         if (i < heap->size - 1)
-            printf(" ");
+            printf(", ");
     }
 
     printf("]\n");

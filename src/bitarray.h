@@ -20,4 +20,8 @@ unsigned int getBitsLengthBitArray(BitArray *array);
 
 unsigned int getBytesLengthBitArray(BitArray *array);
 
+int isFullBitArray(BitArray *array);
+
+void clearBitArray(BitArray *array);
+
 void freeBitArray(BitArray *array);

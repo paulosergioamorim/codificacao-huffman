@@ -85,6 +85,17 @@ unsigned int getBytesLengthBitArray(BitArray *array)
     return (array->size + 7) / 8;
 }
 
+int isFullBitArray(BitArray *array)
+{
+    return array->size == array->capacity;
+}
+
+void clearBitArray(BitArray *array)
+{
+    memset(array->vec, 0, (array->capacity + 7) / 8);
+    array->size = 0;
+}
+
 void freeBitArray(BitArray *array)
 {
     assert(array);

@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra
+CFLAGS = -Wall -Wextra -lm
 RELEASE_FLAGS = -O2
 DEBUG_FLAGS = -g -O0 -DDEBUG
 SRC = ./src

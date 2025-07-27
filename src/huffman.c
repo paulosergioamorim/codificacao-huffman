@@ -22,44 +22,36 @@ Tree *convertToHuffmanTree(Heap *heap)
     return huffmanTree;
 }
 
-void helper_convertHuffmanTreeToTable(Tree *tree, BitArray **table, unsigned int code, int bitsCount)
+void helper_convertHuffmanTreeToTable(Tree *tree, unsigned int *table, unsigned int code)
 {
     if (!tree)
         return;
 
     if (!isLeafTree(tree))
     {
-        helper_convertHuffmanTreeToTable(getLeftTree(tree), table, code << 1, bitsCount + 1);
-        helper_convertHuffmanTreeToTable(getRightTree(tree), table, (code << 1) | 0x01, bitsCount + 1);
+        helper_convertHuffmanTreeToTable(getLeftTree(tree), table, code << 1);
+        helper_convertHuffmanTreeToTable(getRightTree(tree), table, (code << 1) | 1);
         return;
     }
 
     unsigned char value = getValueTree(tree);
-    table[value] = createStaticBitArray(bitsCount);
-    assert(table[value]);
-
-    for (int i = bitsCount - 1; i >= 0; i--)
-        insertLSBBitArray(table[value], (unsigned char)(code >> i));
+    table[value] = code;
 }
 
-BitArray **convertHuffmanTreeToTable(Tree *tree)
+unsigned int *convertHuffmanTreeToTable(Tree *tree)
 {
     assert(tree);
-    BitArray **table = calloc(UCHAR_MAX + 1, sizeof(BitArray *));
+    unsigned int *table = calloc(UCHAR_MAX + 1, sizeof(unsigned int));
     assert(table);
 
-    helper_convertHuffmanTreeToTable(tree, table, 0, 0);
+    helper_convertHuffmanTreeToTable(tree, table, 1);
 
     return table;
 }
 
-void freeEncodingTable(BitArray **table)
+void freeEncodingTable(unsigned int *table)
 {
     assert(table);
-    for (int i = 0; i <= UCHAR_MAX; i++)
-        if (table[i])
-            freeBitArray(table[i]);
-
     free(table);
 }
 
@@ -89,21 +81,6 @@ void serializeHuffmanTree(Tree *tree, BitArray *array)
 
 int getSerializedHuffmanTreeSize(Tree *tree)
 {
-    return getNodesCountTree(tree) + 8 * (getLeafNodesCountTree(tree));
-}
-
-double helper_getExpectedHeight(long totalBytes, Tree *tree, int height)
-{
-    if (!tree)
-        return 0;
-
-    if (isLeafTree(tree))
-        return (double)(height * getFrequencyTree(tree)) / totalBytes;
-
-    return helper_getExpectedHeight(totalBytes, getLeftTree(tree), height + 1) + helper_getExpectedHeight(totalBytes, getRightTree(tree), height + 1);
-}
-
-double getExpectedHeightHuffmanTree(long totalBytes, Tree *tree)
-{
-    return helper_getExpectedHeight(totalBytes, tree, 0);
+    int leafNodesCount = getLeafNodesCountTree(tree);
+    return leafNodesCount * 10 - 1;
 }
