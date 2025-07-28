@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
 #include <string.h>
 #include "bitarray.h"
@@ -128,4 +127,11 @@ unsigned char getBitArray(BitArray *array, unsigned int index)
     int shift = 7 - indexToBit;
 
     return byte >> shift & 0x01;
+}
+
+void writeBitArray(BitArray *array, FILE *fp)
+{
+    unsigned int len = getBytesLengthBitArray(array);
+    unsigned char *content = getContentBitArray(array);
+    fwrite(content, sizeof(unsigned char), len, fp);
 }

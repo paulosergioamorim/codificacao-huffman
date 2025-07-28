@@ -8,8 +8,6 @@
 
 #define BUFFER_SIZE 1024 * 8
 
-void write_buffer(BitArray *array, FILE *fp);
-
 int main(int argc, char const *argv[])
 {
     if (argc < 2)
@@ -106,7 +104,8 @@ int main(int argc, char const *argv[])
                 continue;
             }
 
-            write_buffer(array, outputFile);
+            writeBitArray(array, outputFile);
+            clearBitArray(array);
             insertLSBBitArray(array, code >> i);
         }
     }
@@ -119,18 +118,10 @@ int main(int argc, char const *argv[])
     if (!lastValidBits)
         lastValidBits = 8; // caso: todos os bits do último byte são válidos
 
-    write_buffer(array, outputFile);
+    writeBitArray(array, outputFile);
     fwrite(&lastValidBits, sizeof(lastValidBits), 1, outputFile);
     fclose(outputFile);
     freeBitArray(array);
 
     return 0;
-}
-
-void write_buffer(BitArray *array, FILE *fp)
-{
-    unsigned int len = getBytesLengthBitArray(array);
-    unsigned char *content = getContentBitArray(array);
-    fwrite(content, sizeof(unsigned char), len, fp);
-    clearBitArray(array);
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdio.h>
+
 typedef struct bitarray BitArray;
 
 BitArray *createStaticBitArray(unsigned int maxCapacity);
@@ -25,3 +27,5 @@ int isFullBitArray(BitArray *array);
 void clearBitArray(BitArray *array);
 
 void freeBitArray(BitArray *array);
+
+void writeBitArray(BitArray *array, FILE *fp);

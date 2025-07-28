@@ -16,8 +16,6 @@ int consumeBit(BitReader *br, BitArray *array, Tree *huffmanTree, Tree **tree, u
 
 Tree *createHuffmanTreeFromFile(BitReader *br, unsigned char *lastValidBits);
 
-void write_buffer(BitArray *array, FILE *fp);
-
 int main(int argc, char const *argv[])
 {
     if (argc < 2)
@@ -54,9 +52,12 @@ int main(int argc, char const *argv[])
 
     while ((lastValidBits = consumeBit(br, array, huffmanTree, &cur, lastValidBits)))
         if (isFullBitArray(array))
-            write_buffer(array, outputFile);
+        {
+            writeBitArray(array, outputFile);
+            clearBitArray(array);
+        }
 
-    write_buffer(array, outputFile);
+    writeBitArray(array, outputFile);
     freeBitReader(br);
     freeTree(huffmanTree);
     fclose(inputFile);
@@ -111,12 +112,4 @@ Tree *createHuffmanTreeFromFile(BitReader *br, unsigned char *lastValidBits)
     setRightTree(tree, createHuffmanTreeFromFile(br, lastValidBits));
 
     return tree;
-}
-
-void write_buffer(BitArray *array, FILE *fp)
-{
-    unsigned int len = getBytesLengthBitArray(array);
-    unsigned char *content = getContentBitArray(array);
-    fwrite(content, sizeof(unsigned char), len, fp);
-    clearBitArray(array);
 }
