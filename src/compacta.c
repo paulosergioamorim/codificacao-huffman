@@ -6,6 +6,10 @@
 #include <string.h>
 #include "huffman.h"
 
+#define BUFFER_SIZE 1024 * 8
+
+void write_buffer(BitArray *array, FILE *fp);
+
 int main(int argc, char const *argv[])
 {
     if (argc < 2)
@@ -85,7 +89,7 @@ int main(int argc, char const *argv[])
 
     fseek(inputFile, 0, SEEK_SET);
 
-    array = createStaticBitArray(8 * 1024);
+    array = createStaticBitArray(BUFFER_SIZE);
     serializeHuffmanTree(huffmanTree, array);
     freeTree(huffmanTree);
 
@@ -102,10 +106,7 @@ int main(int argc, char const *argv[])
                 continue;
             }
 
-            unsigned int bytesLength = getBytesLengthBitArray(array);
-            unsigned char *encodedContent = getContentBitArray(array);
-            fwrite(encodedContent, sizeof(unsigned char), bytesLength, outputFile);
-            clearBitArray(array);
+            write_buffer(array, outputFile);
             insertLSBBitArray(array, code >> i);
         }
     }
@@ -118,14 +119,18 @@ int main(int argc, char const *argv[])
     if (!lastValidBits)
         lastValidBits = 8; // caso: todos os bits do último byte são válidos
 
-    unsigned char *encodedContent = getContentBitArray(array);
-    unsigned int bytesLength = getBytesLengthBitArray(array);
-
-    fwrite(encodedContent, sizeof(unsigned char), bytesLength, outputFile);
+    write_buffer(array, outputFile);
     fwrite(&lastValidBits, sizeof(lastValidBits), 1, outputFile);
-
     fclose(outputFile);
     freeBitArray(array);
 
     return 0;
+}
+
+void write_buffer(BitArray *array, FILE *fp)
+{
+    unsigned int len = getBytesLengthBitArray(array);
+    unsigned char *content = getContentBitArray(array);
+    fwrite(content, sizeof(unsigned char), len, fp);
+    clearBitArray(array);
 }

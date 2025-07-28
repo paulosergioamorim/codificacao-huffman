@@ -4,16 +4,19 @@
 #include <string.h>
 #include "huffman.h"
 #include "bitreader.h"
+#include "bitarray.h"
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 1024 * 8
 
 typedef Tree *(*table_fn)(Tree *);
 
 static table_fn table[2] = {getLeftTree, getRightTree};
 
-int consumeBit(BitReader *br, unsigned char *buffer, int *bufferCount, Tree *huffmanTree, Tree **tree, unsigned char lastValidBits);
+int consumeBit(BitReader *br, BitArray *array, Tree *huffmanTree, Tree **tree, unsigned char lastValidBits);
 
 Tree *createHuffmanTreeFromFile(BitReader *br, unsigned char *lastValidBits);
+
+void write_buffer(BitArray *array, FILE *fp);
 
 int main(int argc, char const *argv[])
 {
@@ -34,8 +37,7 @@ int main(int argc, char const *argv[])
     BitReader *br = createBitReader(inputFile);
     fseek(inputFile, -1, SEEK_END);
     unsigned char lastValidBits = 0;
-    unsigned char buffer[BUFFER_SIZE] = {0};
-    int bufferCount = 0;
+    BitArray *array = createStaticBitArray(BUFFER_SIZE);
 
     if (!fread(&lastValidBits, sizeof(lastValidBits), 1, inputFile))
     {
@@ -50,25 +52,22 @@ int main(int argc, char const *argv[])
     Tree *huffmanTree = createHuffmanTreeFromFile(br, &lastValidBits);
     Tree *cur = huffmanTree;
 
-    while ((lastValidBits = consumeBit(br, buffer, &bufferCount, huffmanTree, &cur, lastValidBits)))
-        if (bufferCount == BUFFER_SIZE)
-        {
-            fwrite(&buffer, sizeof(unsigned char), bufferCount, outputFile);
-            memset(buffer, 0, BUFFER_SIZE);
-            bufferCount = 0;
-        }
+    while ((lastValidBits = consumeBit(br, array, huffmanTree, &cur, lastValidBits)))
+        if (isFullBitArray(array))
+            write_buffer(array, outputFile);
 
-    fwrite(&buffer, sizeof(unsigned char), bufferCount, outputFile);
+    write_buffer(array, outputFile);
     freeBitReader(br);
     freeTree(huffmanTree);
     fclose(inputFile);
     fclose(outputFile);
     free(outputFileName);
+    freeBitArray(array);
 
     return 0;
 }
 
-int consumeBit(BitReader *br, unsigned char *buffer, int *bufferCount, Tree *huffmanTree, Tree **tree, unsigned char lastValidBits)
+int consumeBit(BitReader *br, BitArray *array, Tree *huffmanTree, Tree **tree, unsigned char lastValidBits)
 {
     unsigned char bit = readBitBitReader(br);
     Tree *next = *tree;
@@ -86,8 +85,7 @@ int consumeBit(BitReader *br, unsigned char *buffer, int *bufferCount, Tree *huf
     }
 
     unsigned char value = getValueTree(next);
-    buffer[*bufferCount] = value;
-    *bufferCount += 1;
+    insertByteBitArray(array, value);
     *tree = huffmanTree;
 
     return lastValidBits;
@@ -113,4 +111,12 @@ Tree *createHuffmanTreeFromFile(BitReader *br, unsigned char *lastValidBits)
     setRightTree(tree, createHuffmanTreeFromFile(br, lastValidBits));
 
     return tree;
+}
+
+void write_buffer(BitArray *array, FILE *fp)
+{
+    unsigned int len = getBytesLengthBitArray(array);
+    unsigned char *content = getContentBitArray(array);
+    fwrite(content, sizeof(unsigned char), len, fp);
+    clearBitArray(array);
 }
