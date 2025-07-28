@@ -1,141 +1,133 @@
 #!/usr/bin/env bash
 
 # Script para testar compactação e descompactação
-# Suporta a flag --valgrind para análise de consumo de memória
+# Suporta a flag --valgrind para análise de consumo de memória e registra logs e estatísticas em pasta específica
 
 # Cores para saída
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
+# Opções do Valgrind
+LEAK_CHECK_OPTS="--leak-check=full --show-leak-kinds=definite --error-exitcode=1"
+USE_VALGRIND=0
+
 # Parse de flags
-VALGRIND_CMD=""
 while [ "$1" != "" ]; do
   case "$1" in
     --valgrind)
-      # Forçar logs do Valgrind para STDOUT
-      VALGRIND_CMD="valgrind"
+      USE_VALGRIND=1
       ;;
     *)
-      printf "${RED}ERRO: Opção desconhecida: %s${NC}\n" "$1"
+      printf "%bERRO: Opção desconhecida: %s%b\n" "$RED" "$1" "$NC"
       exit 1
       ;;
   esac
   shift
 done
 
-# Configurações
+# Configurações de caminhos
 PROJECT_ROOT=$(pwd)
 TESTS_DIR="$PROJECT_ROOT/tests"
+LOGS_DIR="$TESTS_DIR/logs"
 ENTRADA_DIR="$TESTS_DIR/entrada"
-SAIDA_DIR="$TESTS_DIR/saida"
+SAIDA_DIR="$PROJECT_ROOT/tests/saida"
 COMPACTA_BIN="$PROJECT_ROOT/compacta"
 DESCOMPACTA_BIN="$PROJECT_ROOT/descompacta"
 
 make clean
 make all
 
-# Verificar existência dos diretórios e binários
-if [ ! -d "$TESTS_DIR" ]; then
-    printf "${RED}ERRO: Diretório 'tests' não encontrado!${NC}\n"
+# Verificar existência de diretórios e binários
+for path in "$TESTS_DIR" "$ENTRADA_DIR" "$COMPACTA_BIN" "$DESCOMPACTA_BIN"; do
+  if [ ! -e "$path" ]; then
+    printf "%bERRO: Caminho não encontrado: %s%b\n" "$RED" "$path" "$NC"
     exit 1
-fi
+  fi
+done
 
-if [ ! -d "$ENTRADA_DIR" ]; then
-    printf "${RED}ERRO: Diretório de entrada '%s' não existe!${NC}\n" "$ENTRADA_DIR"
-    exit 1
-fi
-
+# Criar pastas de logs e estatísticas
+mkdir -p "$LOGS_DIR"
 mkdir -p "$SAIDA_DIR"
 
-if [ ! -f "$COMPACTA_BIN" ]; then
-    printf "${RED}ERRO: Binário 'compacta' não encontrado em %s!${NC}\n" "$PROJECT_ROOT"
-    exit 1
-fi
-
-if [ ! -f "$DESCOMPACTA_BIN" ]; then
-    printf "${RED}ERRO: Binário 'descompacta' não encontrado em %s!${NC}\n" "$PROJECT_ROOT"
-    exit 1
-fi
+rm -f "$LOGS_DIR"/*
 
 # Processar cada arquivo de teste
 for input_file in "$ENTRADA_DIR"/*; do
-    [ -f "$input_file" ] || continue
-    filename=$(basename "$input_file")
-    printf "\nProcessando: %s\n" "$filename"
+  [ -f "$input_file" ] || continue
+  filename=$(basename "$input_file")
+  printf "\nProcessando: %s\n" "$filename"
 
-    # Etapa 1: Compactar
-    eval "$VALGRIND_CMD '$COMPACTA_BIN' '$input_file'"
-    compact_exit=$?
-    if [ -n "$VALGRIND_CMD" ]; then
-        if [ $compact_exit -eq 0 ]; then
-            printf "${GREEN}Valgrind: sem erros na compactação de %s${NC}\n" "$filename"
-        else
-            printf "${RED}Valgrind: erros detectados na compactação de %s${NC}\n" "$filename"
-        fi
-    fi
-    if [ $compact_exit -ne 0 ]; then
-        printf "${RED}ERRO: Falha na compactação de %s${NC}\n" "$filename"
-        continue
-    fi
-
-    compressed_file="$input_file.comp"
-    if [ ! -f "$compressed_file" ]; then
-        printf "${RED}ERRO: Arquivo compactado não gerado: %s.comp${NC}\n" "$filename"
-        continue
-    fi
-
-    # Etapa 2: Mover para pasta de saída
-    mv "$compressed_file" "$SAIDA_DIR/"
-
-    # Mostrar tamanhos e taxa
-    orig_size=$(wc -c < "$input_file")
-    comp_size=$(wc -c < "$SAIDA_DIR/$filename.comp")
-    printf "Tamanho original: %d bytes; compactado: %d bytes\n" "$orig_size" "$comp_size"
-    if [ "$orig_size" -gt 0 ]; then
-        compression_rate=$(awk "BEGIN {printf \"%.2f\", (($orig_size - $comp_size) / $orig_size) * 100}")
-        printf "Taxa de compressão: %s%%\n" "$compression_rate"
+  # Compactação
+  if [ $USE_VALGRIND -eq 1 ]; then
+    log_file="$LOGS_DIR/${filename}_compacta_valgrind.log"
+    valgrind $LEAK_CHECK_OPTS --log-file="$log_file" "$COMPACTA_BIN" "$input_file"
+    valgrind_exit=$?
+    if [ $valgrind_exit -eq 0 ]; then
+      printf "%bValgrind: sem vazamentos na compactação de %s (log: %s)%b\n" "$GREEN" "$filename" "$log_file" "$NC"
     else
-        printf "Taxa de compressão: N/A\n"
+      printf "%bValgrind: vazamentos detectados na compactação de %s (exit=%d, log: %s)%b\n" "$RED" "$filename" $valgrind_exit "$log_file" "$NC"
     fi
+    exit_code=$valgrind_exit
+  else
+    "$COMPACTA_BIN" "$input_file"
+    exit_code=$?
+  fi
+  if [ $exit_code -ne 0 ]; then
+    printf "%bERRO: Falha na compactação de %s (exit=%d)%b\n" "$RED" "$filename" $exit_code "$NC"
+    continue
+  fi
 
-    # Etapa 3: Descompactar
-    cd "$SAIDA_DIR" || exit
-    eval "$VALGRIND_CMD '$DESCOMPACTA_BIN' '$filename.comp'"
-    decompress_exit=$?
-    if [ -n "$VALGRIND_CMD" ]; then
-        if [ $decompress_exit -eq 0 ]; then
-            printf "${GREEN}Valgrind: sem erros na descompactação de %s.comp${NC}\n" "$filename"
-        else
-            printf "${RED}Valgrind: erros detectados na descompactação de %s.comp${NC}\n" "$filename"
-        fi
-    fi
-    if [ $decompress_exit -ne 0 ]; then
-        printf "${RED}ERRO: Falha na descompactação de %s.comp${NC}\n" "$filename"
-        cd - >/dev/null || exit
-        continue
-    fi
+  # Mover arquivo compactado
+  mv "$input_file.comp" "$SAIDA_DIR/"
 
-    # Etapa 4: Verificação
-    descompressed_file="$SAIDA_DIR/$filename"
-    if [ ! -f "$descompressed_file" ]; then
-        printf "${RED}ERRO: Arquivo descompactado não gerado: %s${NC}\n" "$filename"
-        cd - >/dev/null || exit
-        continue
-    fi
+  # Calcular estatísticas de compressão
+  orig_size=$(wc -c < "$input_file")
+  comp_size=$(wc -c < "$SAIDA_DIR/$filename.comp")
+  if [ "$orig_size" -gt 0 ]; then
+    rate=$(awk "BEGIN{printf \"%.2f\",(($orig_size-$comp_size)/$orig_size)*100}")
+  else
+    rate="N/A"
+  fi
 
-    # Comparação binária
-    if diff "$input_file" "$descompressed_file" > /dev/null; then
-        printf "${GREEN}SUCESSO: Arquivos idênticos - %s${NC}\n" "$filename"
+  # Gravar estatísticas em arquivo
+  stats_file="$LOGS_DIR/${filename}_stats.log"
+  printf "Tamanho original: %d bytes; compactado: %d bytes; taxa de compressao: %s%%\n" "$orig_size" "$comp_size" "$rate" > "$stats_file"
+
+  # Descompactação
+  cd "$SAIDA_DIR" || exit
+  if [ $USE_VALGRIND -eq 1 ]; then
+    log_file="$LOGS_DIR/${filename}_descompacta_valgrind.log"
+    valgrind $LEAK_CHECK_OPTS --log-file="$log_file" "$DESCOMPACTA_BIN" "$filename.comp"
+    valgrind_exit=$?
+    if [ $valgrind_exit -eq 0 ]; then
+      printf "%bValgrind: sem vazamentos na descompactacao de %s.comp (log: %s)%b\n" "$GREEN" "$filename" "$log_file" "$NC"
     else
-        printf "${RED}FALHA GRAVE: Diferenças encontradas em %s!${NC}\n" "$filename"
-        diff "$input_file" "$descompressed_file" | head -n 20
+      printf "%bValgrind: vazamentos detectados na descompactacao de %s.comp (exit=%d, log: %s)%b\n" "$RED" "$filename" $valgrind_exit "$log_file" "$NC"
     fi
-
-    # Limpeza
-    rm -f "$SAIDA_DIR/$filename.comp"
+    exit_code=$valgrind_exit
+  else
+    "$DESCOMPACTA_BIN" "$filename.comp"
+    exit_code=$?
+  fi
+  if [ $exit_code -ne 0 ]; then
+    printf "%bERRO: Falha na descompactacao de %s.comp (exit=%d)%b\n" "$RED" "$filename" $exit_code "$NC"
     cd - >/dev/null || exit
+    continue
+  fi
+
+  # Verificação binária
+  if diff "$input_file" "$SAIDA_DIR/$filename" > /dev/null; then
+    printf "%bSUCESSO: Arquivos identicos - %s%b\n" "$GREEN" "$filename" "$NC"
+  else
+    printf "%bFALHA GRAVE: Diferencas encontradas em %s!%b\n" "$RED" "$filename" "$NC"
+    diff "$input_file" "$SAIDA_DIR/$filename" | head -n 20
+  fi
+
+  # Limpeza e volta
+  rm -f "$filename.comp"
+  cd - >/dev/null || exit
 
 done
 
-printf "${GREEN}Testes concluídos!${NC}\n"
+printf "\n%bTestes concluídos!%b\n" "$GREEN" "$NC"
