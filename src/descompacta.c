@@ -32,20 +32,19 @@ int main(int argc, char const *argv[])
     assert(inputFile);
     assert(outputFile);
 
-    BitReader *br = createBitReader(inputFile);
     fseek(inputFile, -1, SEEK_END);
     unsigned char lastValidBits = 0;
-    BitArray *array = createStaticBitArray(BUFFER_SIZE);
 
     if (!fread(&lastValidBits, sizeof(lastValidBits), 1, inputFile))
     {
-        freeBitReader(br);
         fclose(inputFile);
         fclose(outputFile);
         free(outputFileName);
         return 0;
     } // caso: arquivo vazio
 
+    BitReader *br = createBitReader(inputFile);
+    BitArray *array = createStaticBitArray(BUFFER_SIZE);
     fseek(inputFile, 0, SEEK_SET);
     Tree *huffmanTree = createHuffmanTreeFromFile(br, &lastValidBits);
     Tree *cur = huffmanTree;
