@@ -5,8 +5,7 @@
 #include <math.h>
 #include <string.h>
 #include "huffman.h"
-
-#define BUFFER_SIZE 1024 * 8
+#include "readbuffer.h"
 
 int main(int argc, char const *argv[])
 {
@@ -16,21 +15,36 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
+    char outputFileName[strlen(argv[1]) + sizeof(".comp")];
+    snprintf(outputFileName, strlen(argv[1]) + sizeof(".comp"), "%s.comp", argv[1]);
+
     FILE *inputFile = fopen(argv[1], "rb");
-    assert(inputFile);
+    FILE *outputFile = fopen(outputFileName, "wb");
+    ReadBuffer *buffer = bufferInit(inputFile);
+
+    if (!bufferHasNextByte(buffer))
+    {
+        fclose(inputFile);
+        fclose(outputFile);
+        bufferFree(buffer);
+        return 0;
+    } // caso: arquivo vazio
+
     unsigned long freqs[UCHAR_MAX + 1] = {0};
-    unsigned char c = 0;
 
-    while (fread(&c, sizeof(c), 1, inputFile))
-        freqs[c]++;
+    while (bufferHasNextByte(buffer))
+    {
+        uint8_t byte = bufferNextAlignedByte(buffer);
+        freqs[byte]++;
+    }
 
-    int charsCount = 0;
+    int bytesCount = 0;
 
     for (int i = 0; i <= UCHAR_MAX; i++)
         if (freqs[i])
-            charsCount++;
+            bytesCount++;
 
-    Heap *heap = createHeap(charsCount);
+    Heap *heap = createHeap(bytesCount);
 
     for (int i = 0; i <= UCHAR_MAX; i++)
         if (freqs[i])
@@ -39,89 +53,62 @@ int main(int argc, char const *argv[])
             pushHeap(heap, tree);
         }
 
-    char outputFileName[strlen(argv[1]) + sizeof(".comp")];
-    snprintf(outputFileName, strlen(argv[1]) + sizeof(".comp"), "%s.comp", argv[1]);
-    FILE *outputFile = fopen(outputFileName, "wb");
-    assert(outputFile);
-
     Tree *huffmanTree = convertToHuffmanTree(heap);
-
-    if (!huffmanTree)
-    {
-        fclose(inputFile);
-        fclose(outputFile);
-        return 0;
-    } // caso: arquivo vazio
-
-    long totalBytes = ftell(inputFile);
-    int serializedHuffmanTreeSize = getSerializedHuffmanTreeSize(huffmanTree);
-
-    BitArray *array;
-
-    if (isLeafTree(huffmanTree))
-    {
-        array = createStaticBitArray(serializedHuffmanTreeSize + totalBytes);
-        serializeHuffmanTree(huffmanTree, array);
-        freeTree(huffmanTree);
-
-        for (long i = 0; i < totalBytes; i++)
-            insertLSBBitArray(array, 0);
-
-        unsigned char lastValidBits = getBitsLengthBitArray(array) % 8;
-
-        if (!lastValidBits)
-            lastValidBits = 8; // caso: todos os bits do último byte são válidos
-
-        unsigned char *encodedContent = getContentBitArray(array);
-        unsigned int bytesLength = getBytesLengthBitArray(array);
-
-        fwrite(encodedContent, sizeof(unsigned char), bytesLength, outputFile);
-        fwrite(&lastValidBits, sizeof(lastValidBits), 1, outputFile);
-        freeBitArray(array);
-        fclose(inputFile);
-        fclose(outputFile);
-        return 0;
-    } // caso: árvore de huffman sendo a raiz folha
-
     unsigned int *table = convertHuffmanTreeToTable(huffmanTree);
+    BitArray *array = createStaticBitArray(BUFFER_SIZE * 8);
+    uint8_t lastValidBits = 8;
 
-    fseek(inputFile, 0, SEEK_SET);
-
-    array = createStaticBitArray(BUFFER_SIZE);
+    fwrite(&lastValidBits, sizeof(uint8_t), 1, outputFile); // caso: suponha que todos os últimos bits são válidos
     serializeHuffmanTree(huffmanTree, array);
     freeTree(huffmanTree);
+    bufferReset(buffer);
 
-    while (fread(&c, sizeof(c), 1, inputFile))
+    while (bufferHasNextByte(buffer))
     {
-        unsigned int code = table[c];
+        uint8_t byte = bufferNextAlignedByte(buffer);
+
+        unsigned int code = table[byte];
         int len = log2(code);
+
+        if (code == 1 && isFullBitArray(array))
+        {
+            writeBitArray(array, outputFile);
+            clearBitArray(array);
+        }
+
+        if (code == 1)
+        {
+            insertLSBBitArray(array, 0);
+            continue;
+        }
 
         for (int i = len - 1; i >= 0; i--)
         {
-            if (!isFullBitArray(array))
+            if (isFullBitArray(array))
             {
-                insertLSBBitArray(array, code >> i);
-                continue;
+                writeBitArray(array, outputFile);
+                clearBitArray(array);
             }
 
-            writeBitArray(array, outputFile);
-            clearBitArray(array);
             insertLSBBitArray(array, code >> i);
         }
     }
 
+    writeBitArray(array, outputFile);
+
+    lastValidBits = getBitsLengthBitArray(array) % 8;
+
+    if (lastValidBits > 0)
+    {
+        fseek(outputFile, 0, SEEK_SET);
+        fwrite(&lastValidBits, sizeof(uint8_t), 1, outputFile);
+    } // caso: menos que 8 bits válidos
+
     freeEncodingTable(table);
     fclose(inputFile);
-
-    unsigned char lastValidBits = getBitsLengthBitArray(array) % 8;
-
-    if (!lastValidBits)
-        lastValidBits = 8; // caso: todos os bits do último byte são válidos
-
-    writeBitArray(array, outputFile);
-    fwrite(&lastValidBits, sizeof(lastValidBits), 1, outputFile);
     fclose(outputFile);
     freeBitArray(array);
+    bufferFree(buffer);
 
     return 0;
 }

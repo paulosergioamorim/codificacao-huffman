@@ -28,7 +28,7 @@ void insertMSBBitArray(BitArray *array, unsigned char bit)
     assert(array);
     if (array->size == array->capacity)
     {
-        fprintf(stderr, "Overflow in bit array in %dth bit.\n", array->size);
+        fprintf(stderr, "[ERROR] Overflow in bit array.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -45,7 +45,7 @@ void insertLSBBitArray(BitArray *array, unsigned char bit)
     assert(array);
     if (array->size == array->capacity)
     {
-        fprintf(stderr, "Overflow in bit array in %dth bit.\n", array->size);
+        fprintf(stderr, "[ERROR] Overflow in bit array.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -64,6 +64,19 @@ void insertByteBitArray(BitArray *array, unsigned char byte)
     assert(array);
     for (int i = 0; i < 8; i++)
         insertMSBBitArray(array, byte << i);
+}
+
+void insertAlignedByteBitArray(BitArray *array, unsigned char byte)
+{
+    if (array->size + 7 == array->capacity)
+    {
+        fprintf(stderr, "[ERROR] Overflow in bit array.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    unsigned int indexOfByte = array->size / 8;
+    array->vec[indexOfByte] = byte;
+    array->size += 8;
 }
 
 unsigned char *getContentBitArray(BitArray *array)

@@ -12,6 +12,8 @@ void insertLSBBitArray(BitArray *array, unsigned char bit);
 
 void insertByteBitArray(BitArray *array, unsigned char byte);
 
+void insertAlignedByteBitArray(BitArray *array, unsigned char byte);
+
 unsigned char getByteBitArray(BitArray *array, unsigned int index);
 
 unsigned char getBitArray(BitArray *array, unsigned int index);

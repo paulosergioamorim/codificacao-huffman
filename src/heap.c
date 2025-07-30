@@ -33,7 +33,7 @@ void pushHeap(Heap *heap, Tree *tree)
         int parentIndex = (i - 1) / 2;
         Tree *parent = heap->vec[parentIndex];
 
-        if (compareTrees(tree, parent))
+        if (compareFrequencyTrees(tree, parent))
             break;
 
         heap->vec[i] = parent;
@@ -62,11 +62,11 @@ Tree *popHeap(Heap *heap)
         int smallest = i;
 
         if (left < heap->size &&
-            compareTrees(heap->vec[smallest], heap->vec[left]))
+            compareFrequencyTrees(heap->vec[smallest], heap->vec[left]))
             smallest = left;
 
         if (right < heap->size &&
-            compareTrees(heap->vec[smallest], heap->vec[right]))
+            compareFrequencyTrees(heap->vec[smallest], heap->vec[right]))
             smallest = right;
 
         if (smallest == i)

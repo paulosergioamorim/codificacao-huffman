@@ -22,6 +22,6 @@ int getFrequencyTree(Tree *tree);
 
 void freeTree(Tree *tree);
 
-int compareTrees(Tree *tree1, Tree *tree2);
+int compareFrequencyTrees(Tree *tree1, Tree *tree2);
 
 void printTree(Tree *tree);

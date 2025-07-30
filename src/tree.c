@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <limits.h>
-#include "bitreader.h"
 #include "tree.h"
 
 struct tree
@@ -86,7 +85,7 @@ void freeTree(Tree *tree)
     free(tree);
 }
 
-int compareTrees(Tree *tree1, Tree *tree2)
+int compareFrequencyTrees(Tree *tree1, Tree *tree2)
 {
     assert(tree1);
     assert(tree2);
@@ -108,62 +107,3 @@ void printTree(Tree *tree)
 
     printf(">");
 }
-
-// Tree *createHuffmanTreeFromFile(FILE *fp)
-// {
-//     int leafNodesCount = 0;
-//     fread(&leafNodesCount, 1, sizeof(int), fp);
-
-//     Tree *huffmanTree = NULL;
-//     Tree *cur = NULL;
-//     int j = 0; // index of bit
-
-//     byte buffer = 0;
-//     fread(&buffer, 1, sizeof(byte), fp);
-
-//     for (int i = 0; i < leafNodesCount; i++)
-//     {
-//         if (buffer == EOF)
-//             break;
-
-//         while ((buffer >> (7 - j) & 0x01) == 0)
-//         {
-//             j++;
-
-//             if (!huffmanTree)
-//             {
-//                 huffmanTree = createTree(0, 0);
-//                 cur = huffmanTree;
-//                 printTree(huffmanTree);
-//                 printf("\n");
-//                 continue;
-//             }
-
-//             Tree *tree = createTree(0, 0);
-//             assert((cur = insertNode(cur, tree)));
-//             printTree(huffmanTree);
-//             printf("\n");
-//         }
-
-//         byte value = 0;
-//         j = (j + 1) % 8;
-//         value = buffer << j;
-//         fread(&buffer, 1, sizeof(byte), fp);
-
-//         if (j == 0)
-//         {
-//             value = buffer;
-//             fread(&buffer, 1, sizeof(byte), fp);
-//             continue;
-//         }
-
-//         value |= buffer >> (8 - j);
-
-//         Tree *tree = createTree(value, 0);
-//         assert((cur = insertNode(cur, tree)));
-//         printTree(huffmanTree);
-//         printf("\n");
-//     }
-
-//     return huffmanTree;
-// }

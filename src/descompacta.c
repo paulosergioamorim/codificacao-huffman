@@ -2,19 +2,17 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include "readbuffer.h"
 #include "huffman.h"
-#include "bitreader.h"
 #include "bitarray.h"
-
-#define BUFFER_SIZE 1024 * 8
 
 typedef Tree *(*table_fn)(Tree *);
 
 static table_fn table[2] = {getLeftTree, getRightTree};
 
-int consumeBit(BitReader *br, BitArray *array, Tree *huffmanTree, Tree **tree, unsigned char lastValidBits);
+void consumeBit(ReadBuffer *buffer, BitArray *array, Tree *huffmanTree, Tree **tree);
 
-Tree *createHuffmanTreeFromFile(BitReader *br, unsigned char *lastValidBits);
+Tree *createHuffmanTreeFromFile(ReadBuffer *buffer);
 
 int main(int argc, char const *argv[])
 {
@@ -24,56 +22,56 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-    char *outputFileName = strdup(argv[1]);
-    char *lastDot = strrchr(outputFileName, '.');
-    *lastDot = 0;
     FILE *inputFile = fopen(argv[1], "rb");
-    FILE *outputFile = fopen(outputFileName, "wb");
-    assert(inputFile);
-    assert(outputFile);
+    char *lastDot = strrchr(argv[1], '.');
+    *lastDot = 0;
+    FILE *outputFile = fopen(argv[1], "wb");
+    ReadBuffer *buffer = bufferInit(inputFile);
 
-    fseek(inputFile, -1, SEEK_END);
-    unsigned char lastValidBits = 0;
-
-    if (!fread(&lastValidBits, sizeof(lastValidBits), 1, inputFile))
+    if (!bufferHasNextByte(buffer))
     {
         fclose(inputFile);
         fclose(outputFile);
-        free(outputFileName);
+        bufferFree(buffer);
         return 0;
     } // caso: arquivo vazio
 
-    BitReader *br = createBitReader(inputFile);
-    BitArray *array = createStaticBitArray(BUFFER_SIZE);
-    fseek(inputFile, 0, SEEK_SET);
-    Tree *huffmanTree = createHuffmanTreeFromFile(br, &lastValidBits);
+    uint8_t lastValidBits = bufferNextAlignedByte(buffer);
+    BitArray *array = createStaticBitArray(BUFFER_SIZE * 8);
+    Tree *huffmanTree = createHuffmanTreeFromFile(buffer);
+
+    if (bufferIsLastByte(buffer))
+        lastValidBits -= (8 - bufferGetBitsCount(buffer)); // caso: árvore serializada consumiu bits do último byte
+
     Tree *cur = huffmanTree;
 
-    while ((lastValidBits = consumeBit(br, array, huffmanTree, &cur, lastValidBits)))
-        if (isFullBitArray(array))
+    while (lastValidBits)
+    {
+        consumeBit(buffer, array, huffmanTree, &cur);
+
+        if (bufferIsLastByte(buffer))
+            lastValidBits--; // caso: consimiu um bit do último byte
+
+        if (!lastValidBits || isFullBitArray(array))
         {
             writeBitArray(array, outputFile);
             clearBitArray(array);
-        }
+        } // caso: escrever um bloco inteiro ou o último bloco
+    }
 
-    writeBitArray(array, outputFile);
-    freeBitReader(br);
     freeTree(huffmanTree);
     fclose(inputFile);
     fclose(outputFile);
-    free(outputFileName);
     freeBitArray(array);
+    bufferFree(buffer);
 
     return 0;
 }
 
-int consumeBit(BitReader *br, BitArray *array, Tree *huffmanTree, Tree **tree, unsigned char lastValidBits)
+void consumeBit(ReadBuffer *buffer, BitArray *array, Tree *huffmanTree, Tree **tree)
 {
-    unsigned char bit = readBitBitReader(br);
+    unsigned char bit = bufferNextBit(buffer);
     Tree *next = *tree;
-
-    if (!hasNextByteBitReader(br))
-        lastValidBits--;
 
     if (!isLeafTree(huffmanTree))
         next = table[bit](next); // caso: raiz da árvore de huffman não é uma folha
@@ -81,34 +79,28 @@ int consumeBit(BitReader *br, BitArray *array, Tree *huffmanTree, Tree **tree, u
     if (!isLeafTree(next))
     {
         *tree = next;
-        return lastValidBits;
+        return;
     }
 
     unsigned char value = getValueTree(next);
-    insertByteBitArray(array, value);
+    insertAlignedByteBitArray(array, value);
     *tree = huffmanTree;
-
-    return lastValidBits;
 }
 
-Tree *createHuffmanTreeFromFile(BitReader *br, unsigned char *lastValidBits)
+Tree *createHuffmanTreeFromFile(ReadBuffer *buffer)
 {
-    int isLeafNode = readBitBitReader(br);
+    uint8_t isLeafNode = bufferNextBit(buffer);
 
     if (isLeafNode)
     {
-        unsigned char value = readByteBitReader(br);
-
-        if (!hasNextByteBitReader(br))
-            *lastValidBits -= getReadedBitsBitReader(br); // caso: a árvore de huffman ocupou o último byte
-
+        uint8_t value = bufferNextByte(buffer);
         return createTree(value, 0);
     }
 
     Tree *tree = createTree(0, 0);
 
-    setLeftTree(tree, createHuffmanTreeFromFile(br, lastValidBits));
-    setRightTree(tree, createHuffmanTreeFromFile(br, lastValidBits));
+    setLeftTree(tree, createHuffmanTreeFromFile(buffer));
+    setRightTree(tree, createHuffmanTreeFromFile(buffer));
 
     return tree;
 }

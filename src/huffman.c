@@ -2,7 +2,7 @@
 #include <limits.h>
 #include <assert.h>
 #include "huffman.h"
-#include "bitreader.h"
+#include "stack.h"
 
 Tree *convertToHuffmanTree(Heap *heap)
 {
