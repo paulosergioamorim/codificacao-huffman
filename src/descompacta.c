@@ -5,14 +5,7 @@
 #include "readbuffer.h"
 #include "huffman.h"
 #include "bitarray.h"
-
-typedef Tree *(*table_fn)(Tree *);
-
-static table_fn table[2] = {getLeftTree, getRightTree};
-
-void consumeBit(ReadBuffer *buffer, BitArray *array, Tree *huffmanTree, Tree **tree);
-
-Tree *createHuffmanTreeFromFile(ReadBuffer *buffer);
+#include "utils.h"
 
 int main(int argc, char const *argv[])
 {
@@ -22,10 +15,9 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-    FILE *inputFile = fopen(argv[1], "rb");
-    char *lastDot = strrchr(argv[1], '.');
-    *lastDot = 0;
-    FILE *outputFile = fopen(argv[1], "wb");
+    FILE *inputFile = openFileToRead(argv[1]);
+    removeExtentionFromString(argv[1]);
+    FILE *outputFile = openFileToWrite(argv[1]);
     ReadBuffer *buffer = bufferInit(inputFile);
 
     if (!bufferHasNextByte(buffer))
@@ -66,41 +58,4 @@ int main(int argc, char const *argv[])
     bufferFree(buffer);
 
     return 0;
-}
-
-void consumeBit(ReadBuffer *buffer, BitArray *array, Tree *huffmanTree, Tree **tree)
-{
-    unsigned char bit = bufferNextBit(buffer);
-    Tree *next = *tree;
-
-    if (!isLeafTree(huffmanTree))
-        next = table[bit](next); // caso: raiz da árvore de huffman não é uma folha
-
-    if (!isLeafTree(next))
-    {
-        *tree = next;
-        return;
-    }
-
-    unsigned char value = getValueTree(next);
-    insertAlignedByteBitArray(array, value);
-    *tree = huffmanTree;
-}
-
-Tree *createHuffmanTreeFromFile(ReadBuffer *buffer)
-{
-    uint8_t isLeafNode = bufferNextBit(buffer);
-
-    if (isLeafNode)
-    {
-        uint8_t value = bufferNextByte(buffer);
-        return createTree(value, 0);
-    }
-
-    Tree *tree = createTree(0, 0);
-
-    setLeftTree(tree, createHuffmanTreeFromFile(buffer));
-    setRightTree(tree, createHuffmanTreeFromFile(buffer));
-
-    return tree;
 }

@@ -35,9 +35,6 @@ SAIDA_DIR="$PROJECT_ROOT/tests/saida"
 COMPACTA_BIN="$PROJECT_ROOT/compacta"
 DESCOMPACTA_BIN="$PROJECT_ROOT/descompacta"
 
-make clean
-make all
-
 # Verificar existência de diretórios e binários
 for path in "$TESTS_DIR" "$ENTRADA_DIR" "$COMPACTA_BIN" "$DESCOMPACTA_BIN"; do
   if [ ! -e "$path" ]; then

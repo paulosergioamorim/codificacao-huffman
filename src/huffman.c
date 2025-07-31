@@ -2,7 +2,10 @@
 #include <limits.h>
 #include <assert.h>
 #include "huffman.h"
-#include "stack.h"
+
+typedef Tree *(*table_fn)(Tree *);
+
+static table_fn decodeTable[2] = {getLeftTree, getRightTree};
 
 Tree *convertToHuffmanTree(Heap *heap)
 {
@@ -83,4 +86,41 @@ int getSerializedHuffmanTreeSize(Tree *tree)
 {
     int leafNodesCount = getLeafNodesCountTree(tree);
     return leafNodesCount * 10 - 1;
+}
+
+void consumeBit(ReadBuffer *buffer, BitArray *array, Tree *huffmanTree, Tree **tree)
+{
+    unsigned char bit = bufferNextBit(buffer);
+    Tree *next = *tree;
+
+    if (!isLeafTree(huffmanTree))
+        next = decodeTable[bit](next); // caso: raiz da árvore de huffman não é uma folha
+
+    if (!isLeafTree(next))
+    {
+        *tree = next;
+        return;
+    }
+
+    unsigned char value = getValueTree(next);
+    insertAlignedByteBitArray(array, value);
+    *tree = huffmanTree;
+}
+
+Tree *createHuffmanTreeFromFile(ReadBuffer *buffer)
+{
+    uint8_t isLeafNode = bufferNextBit(buffer);
+
+    if (isLeafNode)
+    {
+        uint8_t value = bufferNextByte(buffer);
+        return createTree(value, 0);
+    }
+
+    Tree *tree = createTree(0, 0);
+
+    setLeftTree(tree, createHuffmanTreeFromFile(buffer));
+    setRightTree(tree, createHuffmanTreeFromFile(buffer));
+
+    return tree;
 }

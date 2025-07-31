@@ -6,6 +6,7 @@
 #include <string.h>
 #include "huffman.h"
 #include "readbuffer.h"
+#include "utils.h"
 
 int main(int argc, char const *argv[])
 {
@@ -15,11 +16,10 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-    char outputFileName[strlen(argv[1]) + sizeof(".comp")];
-    snprintf(outputFileName, strlen(argv[1]) + sizeof(".comp"), "%s.comp", argv[1]);
-
-    FILE *inputFile = fopen(argv[1], "rb");
-    FILE *outputFile = fopen(outputFileName, "wb");
+    FILE *inputFile = openFileToRead(argv[1]);
+    char *outputFileName = addExtentionToString(argv[1]);
+    FILE *outputFile = openFileToWrite(outputFileName);
+    free(outputFileName);
     ReadBuffer *buffer = bufferInit(inputFile);
 
     if (!bufferHasNextByte(buffer))
@@ -30,7 +30,7 @@ int main(int argc, char const *argv[])
         return 0;
     } // caso: arquivo vazio
 
-    unsigned long freqs[UCHAR_MAX + 1] = {0};
+    unsigned long freqs[ASCII_SIZE] = {0};
 
     while (bufferHasNextByte(buffer))
     {
@@ -40,13 +40,13 @@ int main(int argc, char const *argv[])
 
     int bytesCount = 0;
 
-    for (int i = 0; i <= UCHAR_MAX; i++)
+    for (int i = 0; i < ASCII_SIZE; i++)
         if (freqs[i])
             bytesCount++;
 
     Heap *heap = createHeap(bytesCount);
 
-    for (int i = 0; i <= UCHAR_MAX; i++)
+    for (int i = 0; i < ASCII_SIZE; i++)
         if (freqs[i])
         {
             Tree *tree = createTree(i, freqs[i]);
