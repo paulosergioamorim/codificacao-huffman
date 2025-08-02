@@ -8,51 +8,38 @@ struct readbuffer
     uint8_t *vec;
     int byteIndex;
     int bytesCount;
-    int bitsCount;
+    int bitIndex;
     int endOfFile;
 };
 
-int buffer_fetch(ReadBuffer *buffer);
-
-int buffer_fetch(ReadBuffer *buffer)
-{
-    int bytesReaded = fread(buffer->vec, sizeof(uint8_t), BUFFER_SIZE, buffer->fp);
-    buffer->bytesCount = bytesReaded;
-    buffer->byteIndex = 0;
-    buffer->bitsCount = 8;
-
-    if (bytesReaded < BUFFER_SIZE)
-        buffer->endOfFile = 1;
-
-    return bytesReaded;
-}
+void bufferFetch(ReadBuffer *buffer);
 
 ReadBuffer *bufferInit(FILE *fp)
 {
     ReadBuffer *buffer = malloc(sizeof(ReadBuffer));
     buffer->fp = fp;
     buffer->vec = calloc(BUFFER_SIZE, sizeof(uint8_t));
-    buffer->bitsCount = buffer->bytesCount = buffer->endOfFile = buffer->byteIndex = 0;
+    buffer->bitIndex = buffer->bytesCount = buffer->endOfFile = buffer->byteIndex = 0;
 
     return buffer;
 }
 
 uint8_t bufferNextBit(ReadBuffer *buffer)
 {
-    if (buffer->bitsCount == 0)
+    if (buffer->bitIndex == 0)
     {
-        buffer->bitsCount = 8;
+        buffer->bitIndex = 8;
         buffer->byteIndex++;
 
         if (buffer->byteIndex == buffer->bytesCount)
-            buffer->bytesCount = buffer_fetch(buffer);
+            bufferFetch(buffer);
     }
 
     uint8_t bit = buffer->vec[buffer->byteIndex];
     bit >>= 7;
     bit &= 0x01;
     buffer->vec[buffer->byteIndex] <<= 1;
-    buffer->bitsCount--;
+    buffer->bitIndex--;
     return bit;
 }
 
@@ -71,19 +58,20 @@ uint8_t bufferNextByte(ReadBuffer *buffer)
 
 uint8_t bufferNextAlignedByte(ReadBuffer *buffer)
 {
-    buffer->bitsCount = 8;
+    buffer->bitIndex = 8;
     uint8_t byte = buffer->vec[buffer->byteIndex];
     buffer->byteIndex++;
 
     if (buffer->byteIndex == buffer->bytesCount)
-        buffer->bytesCount = buffer_fetch(buffer);
+        bufferFetch(buffer);
+
     return byte;
 }
 
 int bufferHasNextByte(ReadBuffer *buffer)
 {
     if (buffer->byteIndex == buffer->bytesCount)
-        buffer->bytesCount = buffer_fetch(buffer);
+        bufferFetch(buffer);
 
     if (!buffer->bytesCount)
         return 0;
@@ -94,7 +82,7 @@ int bufferHasNextByte(ReadBuffer *buffer)
 int bufferIsLastByte(ReadBuffer *buffer)
 {
     if (buffer->byteIndex == buffer->bytesCount)
-        buffer->bytesCount = buffer_fetch(buffer);
+        bufferFetch(buffer);
 
     if (!buffer->bytesCount)
         return 0;
@@ -111,14 +99,18 @@ void bufferFree(ReadBuffer *buffer)
 void bufferReset(ReadBuffer *buffer)
 {
     fseek(buffer->fp, 0, SEEK_SET);
-    buffer->byteIndex = 0;
-    buffer->bytesCount = 0;
-    buffer->bitsCount = 0;
-    buffer->endOfFile = 0;
+    buffer->bitIndex = buffer->bytesCount = buffer->endOfFile = buffer->byteIndex = 0;
     memset(buffer->vec, 0, BUFFER_SIZE);
 }
 
-int bufferGetBitsCount(ReadBuffer *buffer)
+int bufferGetBitIndex(ReadBuffer *buffer)
 {
-    return buffer->bitsCount;
+    return buffer->bitIndex;
+}
+
+void bufferFetch(ReadBuffer *buffer)
+{
+    buffer->endOfFile = (buffer->bytesCount = fread(buffer->vec, sizeof(uint8_t), BUFFER_SIZE, buffer->fp)) < BUFFER_SIZE;
+    buffer->byteIndex = 0;
+    buffer->bitIndex = 8;
 }

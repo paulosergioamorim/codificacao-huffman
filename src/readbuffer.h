@@ -22,4 +22,4 @@ void bufferReset(ReadBuffer *buffer);
 
 void bufferFree(ReadBuffer *buffer);
 
-int bufferGetBitsCount(ReadBuffer *buffer);
+int bufferGetBitIndex(ReadBuffer *buffer);
