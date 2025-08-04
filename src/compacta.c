@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <limits.h>
 #include <math.h>
-#include <string.h>
 #include "huffman.h"
 #include "readbuffer.h"
 #include "utils.h"
