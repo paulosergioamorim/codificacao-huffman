@@ -1,10 +1,10 @@
+#include "bitarray.h"
+#include "huffman.h"
+#include "readbuffer.h"
+#include "utils.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
-#include "readbuffer.h"
-#include "huffman.h"
-#include "bitarray.h"
-#include "utils.h"
 
 int main(int argc, char const *argv[])
 {
@@ -27,8 +27,8 @@ int main(int argc, char const *argv[])
         return 0;
     } // caso: arquivo vazio
 
-    uint8_t lastValidBits = bufferNextAlignedByte(buffer);
-    BitArray *array = createStaticBitArray(BUFFER_SIZE * 8);
+    unsigned char lastValidBits = bufferNextAlignedByte(buffer);
+    BitArray *array = createStaticBitArray(BUFFER_SIZE);
     Tree *huffmanTree = createHuffmanTreeFromFile(buffer);
 
     if (bufferIsLastByte(buffer))

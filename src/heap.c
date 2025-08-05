@@ -1,7 +1,7 @@
+#include "heap.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
-#include "heap.h"
 
 struct heap
 {
@@ -24,8 +24,6 @@ Heap *createHeap(int maxCapacity)
 
 void pushHeap(Heap *heap, Tree *tree)
 {
-    assert(heap);
-    assert(heap->size < heap->capacity);
     int i = heap->size++;
 
     while (i > 0)
@@ -45,14 +43,11 @@ void pushHeap(Heap *heap, Tree *tree)
 
 Tree *popHeap(Heap *heap)
 {
-    assert(heap);
     if (heap->size == 0)
         return NULL;
 
     Tree *min = heap->vec[0];
-
     heap->vec[0] = heap->vec[--heap->size];
-
     int i = 0;
 
     while (1)
@@ -61,12 +56,10 @@ Tree *popHeap(Heap *heap)
         int right = 2 * i + 2;
         int smallest = i;
 
-        if (left < heap->size &&
-            compareFrequencyTrees(heap->vec[smallest], heap->vec[left]))
+        if (left < heap->size && compareFrequencyTrees(heap->vec[smallest], heap->vec[left]))
             smallest = left;
 
-        if (right < heap->size &&
-            compareFrequencyTrees(heap->vec[smallest], heap->vec[right]))
+        if (right < heap->size && compareFrequencyTrees(heap->vec[smallest], heap->vec[right]))
             smallest = right;
 
         if (smallest == i)
@@ -83,8 +76,6 @@ Tree *popHeap(Heap *heap)
 
 void freeHeap(Heap *heap)
 {
-    assert(heap);
-
     for (int i = 0; i < heap->size; i++)
         freeTree(heap->vec[i]);
 

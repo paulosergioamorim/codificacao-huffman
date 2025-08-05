@@ -2,17 +2,16 @@
 
 #define BUFFER_SIZE 1024 * 1024
 #include <stdio.h>
-#include <stdint.h>
 
 typedef struct readbuffer ReadBuffer;
 
 ReadBuffer *bufferInit(FILE *fp);
 
-uint8_t bufferNextBit(ReadBuffer *buffer);
+unsigned char bufferNextBit(ReadBuffer *buffer);
 
-uint8_t bufferNextByte(ReadBuffer *buffer);
+unsigned char bufferNextByte(ReadBuffer *buffer);
 
-uint8_t bufferNextAlignedByte(ReadBuffer *buffer);
+unsigned char bufferNextAlignedByte(ReadBuffer *buffer);
 
 int bufferIsLastByte(ReadBuffer *buffer);
 

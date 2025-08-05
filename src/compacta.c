@@ -1,11 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <limits.h>
-#include <math.h>
 #include "huffman.h"
 #include "readbuffer.h"
 #include "utils.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 int main(int argc, char const *argv[])
 {
@@ -33,7 +31,7 @@ int main(int argc, char const *argv[])
 
     while (bufferHasNextByte(buffer))
     {
-        uint8_t byte = bufferNextAlignedByte(buffer);
+        unsigned char byte = bufferNextAlignedByte(buffer);
         freqs[byte]++;
     }
 
@@ -54,17 +52,18 @@ int main(int argc, char const *argv[])
 
     Tree *huffmanTree = convertToHuffmanTree(heap);
     unsigned int *table = convertHuffmanTreeToTable(huffmanTree);
-    BitArray *array = createStaticBitArray(BUFFER_SIZE * 8);
-    uint8_t lastValidBits = 8;
+    BitArray *array = createStaticBitArray(BUFFER_SIZE);
+    unsigned char lastValidBits = 8;
 
-    fwrite(&lastValidBits, sizeof(uint8_t), 1, outputFile); // caso: suponha que todos os últimos bits são válidos
+    fwrite(&lastValidBits, sizeof(unsigned char), 1,
+           outputFile); // caso: suponha que todos os últimos bits são válidos
     serializeHuffmanTree(huffmanTree, array);
     freeTree(huffmanTree);
     bufferReset(buffer);
 
     while (bufferHasNextByte(buffer))
     {
-        uint8_t byte = bufferNextAlignedByte(buffer);
+        unsigned char byte = bufferNextAlignedByte(buffer);
 
         unsigned int code = table[byte];
         int len = log2(code);
@@ -100,10 +99,10 @@ int main(int argc, char const *argv[])
     if (lastValidBits > 0)
     {
         fseek(outputFile, 0, SEEK_SET);
-        fwrite(&lastValidBits, sizeof(uint8_t), 1, outputFile);
+        fwrite(&lastValidBits, sizeof(unsigned char), 1, outputFile);
     } // caso: menos que 8 bits válidos
 
-    freeEncodingTable(table);
+    free(table);
     fclose(inputFile);
     fclose(outputFile);
     freeBitArray(array);

@@ -1,16 +1,14 @@
 #pragma once
 
-#include "tree.h"
-#include "heap.h"
 #include "bitarray.h"
+#include "heap.h"
 #include "readbuffer.h"
+#include "tree.h"
 #include <stdio.h>
 
 Tree *convertToHuffmanTree(Heap *heap);
 
 unsigned int *convertHuffmanTreeToTable(Tree *tree);
-
-void freeEncodingTable(unsigned int *table);
 
 void serializeHuffmanTree(Tree *tree, BitArray *array);
 

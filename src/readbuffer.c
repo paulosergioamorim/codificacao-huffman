@@ -1,11 +1,11 @@
+#include "readbuffer.h"
 #include <stdlib.h>
 #include <string.h>
-#include "readbuffer.h"
 
 struct readbuffer
 {
     FILE *fp;
-    uint8_t *vec;
+    unsigned char *vec;
     int byteIndex;
     int bytesCount;
     int bitIndex;
@@ -18,13 +18,13 @@ ReadBuffer *bufferInit(FILE *fp)
 {
     ReadBuffer *buffer = malloc(sizeof(ReadBuffer));
     buffer->fp = fp;
-    buffer->vec = calloc(BUFFER_SIZE, sizeof(uint8_t));
+    buffer->vec = calloc(BUFFER_SIZE, sizeof(unsigned char));
     buffer->bitIndex = buffer->bytesCount = buffer->endOfFile = buffer->byteIndex = 0;
 
     return buffer;
 }
 
-uint8_t bufferNextBit(ReadBuffer *buffer)
+unsigned char bufferNextBit(ReadBuffer *buffer)
 {
     if (buffer->bitIndex == 0)
     {
@@ -35,7 +35,7 @@ uint8_t bufferNextBit(ReadBuffer *buffer)
             bufferFetch(buffer);
     }
 
-    uint8_t bit = buffer->vec[buffer->byteIndex];
+    unsigned char bit = buffer->vec[buffer->byteIndex];
     bit >>= 7;
     bit &= 0x01;
     buffer->vec[buffer->byteIndex] <<= 1;
@@ -43,9 +43,9 @@ uint8_t bufferNextBit(ReadBuffer *buffer)
     return bit;
 }
 
-uint8_t bufferNextByte(ReadBuffer *buffer)
+unsigned char bufferNextByte(ReadBuffer *buffer)
 {
-    uint8_t byte = 0;
+    unsigned char byte = 0;
 
     for (int i = 0; i < 8; i++)
     {
@@ -56,10 +56,9 @@ uint8_t bufferNextByte(ReadBuffer *buffer)
     return byte;
 }
 
-uint8_t bufferNextAlignedByte(ReadBuffer *buffer)
+unsigned char bufferNextAlignedByte(ReadBuffer *buffer)
 {
-    buffer->bitIndex = 8;
-    uint8_t byte = buffer->vec[buffer->byteIndex];
+    unsigned char byte = buffer->vec[buffer->byteIndex];
     buffer->byteIndex++;
 
     if (buffer->byteIndex == buffer->bytesCount)
@@ -110,7 +109,8 @@ int bufferGetBitIndex(ReadBuffer *buffer)
 
 void bufferFetch(ReadBuffer *buffer)
 {
-    buffer->endOfFile = (buffer->bytesCount = fread(buffer->vec, sizeof(uint8_t), BUFFER_SIZE, buffer->fp)) < BUFFER_SIZE;
+    buffer->endOfFile =
+        (buffer->bytesCount = fread(buffer->vec, sizeof(unsigned char), BUFFER_SIZE, buffer->fp)) < BUFFER_SIZE;
     buffer->byteIndex = 0;
     buffer->bitIndex = 8;
 }

@@ -1,7 +1,7 @@
-#include <stdlib.h>
-#include <limits.h>
-#include <assert.h>
 #include "huffman.h"
+#include <assert.h>
+#include <limits.h>
+#include <stdlib.h>
 
 typedef Tree *(*table_fn)(Tree *);
 
@@ -43,19 +43,11 @@ void helper_convertHuffmanTreeToTable(Tree *tree, unsigned int *table, unsigned 
 
 unsigned int *convertHuffmanTreeToTable(Tree *tree)
 {
-    assert(tree);
     unsigned int *table = calloc(UCHAR_MAX + 1, sizeof(unsigned int));
-    assert(table);
 
     helper_convertHuffmanTreeToTable(tree, table, 1);
 
     return table;
-}
-
-void freeEncodingTable(unsigned int *table)
-{
-    assert(table);
-    free(table);
 }
 
 void helper_serializeHuffmanTree(Tree *tree, BitArray *array)
@@ -77,8 +69,6 @@ void helper_serializeHuffmanTree(Tree *tree, BitArray *array)
 
 void serializeHuffmanTree(Tree *tree, BitArray *array)
 {
-    assert(tree);
-    assert(array);
     helper_serializeHuffmanTree(tree, array);
 }
 
@@ -109,11 +99,11 @@ void consumeBit(ReadBuffer *buffer, BitArray *array, Tree *huffmanTree, Tree **t
 
 Tree *createHuffmanTreeFromFile(ReadBuffer *buffer)
 {
-    uint8_t isLeafNode = bufferNextBit(buffer);
+    unsigned char isLeafNode = bufferNextBit(buffer);
 
     if (isLeafNode)
     {
-        uint8_t value = bufferNextByte(buffer);
+        unsigned char value = bufferNextByte(buffer);
         return createTree(value, 0);
     }
 

@@ -1,8 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include "tree.h"
 #include <assert.h>
 #include <limits.h>
-#include "tree.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 struct tree
 {
@@ -25,25 +25,21 @@ Tree *createTree(unsigned char value, int frequency)
 
 void setLeftTree(Tree *tree, Tree *left)
 {
-    assert(tree);
     tree->left = left;
 }
 
 Tree *getLeftTree(Tree *tree)
 {
-    assert(tree);
     return tree->left;
 }
 
 void setRightTree(Tree *tree, Tree *right)
 {
-    assert(tree);
     tree->right = right;
 }
 
 Tree *getRightTree(Tree *tree)
 {
-    assert(tree);
     return tree->right;
 }
 
@@ -65,13 +61,11 @@ int getLeafNodesCountTree(Tree *tree)
 
 unsigned char getValueTree(Tree *tree)
 {
-    assert(tree);
     return tree->value;
 }
 
 int getFrequencyTree(Tree *tree)
 {
-    assert(tree);
     return tree->frequency;
 }
 
@@ -87,8 +81,6 @@ void freeTree(Tree *tree)
 
 int compareFrequencyTrees(Tree *tree1, Tree *tree2)
 {
-    assert(tree1);
-    assert(tree2);
     return tree1->frequency >= tree2->frequency;
 }
 

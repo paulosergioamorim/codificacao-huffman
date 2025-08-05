@@ -1,8 +1,7 @@
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
 #include "bitarray.h"
-#include <stdint.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
 struct bitarray
 {
@@ -17,7 +16,7 @@ BitArray *createStaticBitArray(unsigned int capacity)
     assert(array);
     array->capacity = capacity;
     array->size = 0;
-    array->vec = calloc((array->capacity + 7) / 8, sizeof(unsigned char));
+    array->vec = calloc(array->capacity, sizeof(unsigned char));
     assert(array->vec);
 
     return array;
@@ -25,8 +24,7 @@ BitArray *createStaticBitArray(unsigned int capacity)
 
 void insertMSBBitArray(BitArray *array, unsigned char bit)
 {
-    assert(array);
-    if (array->size == array->capacity)
+    if (array->size == array->capacity * 8)
     {
         fprintf(stderr, "[ERROR] Overflow in bit array.\n");
         exit(EXIT_FAILURE);
@@ -42,8 +40,7 @@ void insertMSBBitArray(BitArray *array, unsigned char bit)
 
 void insertLSBBitArray(BitArray *array, unsigned char bit)
 {
-    assert(array);
-    if (array->size == array->capacity)
+    if (array->size == array->capacity * 8)
     {
         fprintf(stderr, "[ERROR] Overflow in bit array.\n");
         exit(EXIT_FAILURE);
@@ -61,14 +58,13 @@ void insertLSBBitArray(BitArray *array, unsigned char bit)
 
 void insertByteBitArray(BitArray *array, unsigned char byte)
 {
-    assert(array);
     for (int i = 0; i < 8; i++)
         insertMSBBitArray(array, byte << i);
 }
 
 void insertAlignedByteBitArray(BitArray *array, unsigned char byte)
 {
-    if (array->size + 7 == array->capacity)
+    if (array->size + 7 == array->capacity * 8)
     {
         fprintf(stderr, "[ERROR] Overflow in bit array.\n");
         exit(EXIT_FAILURE);
@@ -81,45 +77,38 @@ void insertAlignedByteBitArray(BitArray *array, unsigned char byte)
 
 unsigned char *getContentBitArray(BitArray *array)
 {
-    assert(array);
     return array->vec;
 }
 
 unsigned int getBitsLengthBitArray(BitArray *array)
 {
-    assert(array);
     return array->size;
 }
 
 unsigned int getBytesLengthBitArray(BitArray *array)
 {
-    assert(array);
     return (array->size + 7) / 8;
 }
 
 int isFullBitArray(BitArray *array)
 {
-    return array->size == array->capacity;
+    return array->size == array->capacity * 8;
 }
 
 void clearBitArray(BitArray *array)
 {
-    memset(array->vec, 0, (array->capacity + 7) / 8);
+    memset(array->vec, 0, array->capacity);
     array->size = 0;
 }
 
 void freeBitArray(BitArray *array)
 {
-    assert(array);
-    assert(array->vec);
     free(array->vec);
     free(array);
 }
 
 unsigned char getByteBitArray(BitArray *array, unsigned int index)
 {
-    assert(array);
-    assert(array->vec);
     if (index >= (array->size + 7) / 8)
         return 0;
 
@@ -128,8 +117,6 @@ unsigned char getByteBitArray(BitArray *array, unsigned int index)
 
 unsigned char getBitArray(BitArray *array, unsigned int index)
 {
-    assert(array);
-    assert(array->vec);
     if (index >= array->size)
         return 0;
 

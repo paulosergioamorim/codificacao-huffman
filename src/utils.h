@@ -1,7 +1,6 @@
 #pragma once
 #include <limits.h>
 #include <stdio.h>
-#include <stdint.h>
 
 #define ASCII_SIZE UCHAR_MAX + 1
 
