@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -16,30 +17,4 @@ void removeExtentionFromString(const char *str)
 {
     char *lastDot = strrchr(str, '.');
     *lastDot = 0;
-}
-
-FILE *openFileToRead(const char *path)
-{
-    FILE *fp = fopen(path, "rb");
-
-    if (!fp)
-    {
-        fprintf(stderr, "[ERRO] Falha ao abrir arquivo.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    return fp;
-}
-
-FILE *openFileToWrite(const char *path)
-{
-    FILE *fp = fopen(path, "wb");
-
-    if (!fp)
-    {
-        fprintf(stderr, "[ERRO] Falha ao abrir arquivo.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    return fp;
 }

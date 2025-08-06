@@ -13,9 +13,24 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-    FILE *inputFile = openFileToRead(argv[1]);
+    FILE *inputFile = NULL;
+    FILE *outputFile = NULL;
+
+    if (!(inputFile = fopen(argv[1], "rb")))
+    {
+        fprintf(stderr, "Falha ao abrir arquivo de entrada.\n");
+        return 1;
+    }
+
     char *outputFileName = addExtentionToString(argv[1]);
-    FILE *outputFile = openFileToWrite(outputFileName);
+
+    if (!(outputFile = fopen(outputFileName, "wb")))
+    {
+        fprintf(stderr, "Falha ao abrir arquivo de saída.\n");
+        fclose(inputFile);
+        return 1;
+    }
+
     free(outputFileName);
     ReadBuffer *buffer = bufferInit(inputFile);
 

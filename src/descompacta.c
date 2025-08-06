@@ -11,12 +11,27 @@ int main(int argc, char const *argv[])
     if (argc < 2)
     {
         fprintf(stderr, "Insira um arquivo para descomprimir.\n");
-        exit(1);
+        return 1;
     }
 
-    FILE *inputFile = openFileToRead(argv[1]);
+    FILE *inputFile = NULL;
+    FILE *outputFile = NULL;
+
+    if (!(inputFile = fopen(argv[1], "rb")))
+    {
+        fprintf(stderr, "Falha ao abrir arquivo de entrada.\n");
+        return 1;
+    }
+
     removeExtentionFromString(argv[1]);
-    FILE *outputFile = openFileToWrite(argv[1]);
+
+    if (!(outputFile = fopen(argv[1], "wb")))
+    {
+        fprintf(stderr, "Falha ao abrir arquivo de saída.\n");
+        fclose(inputFile);
+        return 1;
+    }
+
     ReadBuffer *buffer = bufferInit(inputFile);
 
     if (!bufferHasNextByte(buffer))

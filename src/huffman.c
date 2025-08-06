@@ -99,7 +99,7 @@ void consumeBit(ReadBuffer *buffer, BitArray *array, Tree *huffmanTree, Tree **t
 
 Tree *createHuffmanTreeFromFile(ReadBuffer *buffer)
 {
-    unsigned char isLeafNode = bufferNextBit(buffer);
+    int isLeafNode = bufferNextBit(buffer);
 
     if (isLeafNode)
     {
