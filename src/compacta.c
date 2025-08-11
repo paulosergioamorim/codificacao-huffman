@@ -67,12 +67,12 @@ int main(int argc, char const *argv[])
 
     Tree *huffmanTree = convertToHuffmanTree(heap);
     unsigned int *table = convertHuffmanTreeToTable(huffmanTree);
-    BitArray *array = createStaticBitArray(BUFFER_SIZE);
+    Bitmap *bitmap = createStaticBitmap(BUFFER_SIZE);
     unsigned char lastValidBits = 8;
 
     fwrite(&lastValidBits, sizeof(unsigned char), 1,
            outputFile); // caso: suponha que todos os últimos bits são válidos
-    serializeHuffmanTree(huffmanTree, array);
+    serializeHuffmanTree(huffmanTree, bitmap);
     freeTree(huffmanTree);
     bufferReset(buffer);
 
@@ -83,33 +83,33 @@ int main(int argc, char const *argv[])
         unsigned int code = table[byte];
         int len = log2(code);
 
-        if (code == 1 && isFullBitArray(array))
+        if (code == 1 && isFullBitmap(bitmap))
         {
-            writeBitArray(array, outputFile);
-            clearBitArray(array);
+            writeBitmap(bitmap, outputFile);
+            clearBitmap(bitmap);
         }
 
         if (code == 1)
         {
-            insertLSBBitArray(array, 0);
+            insertLSBBitmap(bitmap, 0);
             continue;
         }
 
         for (int i = len - 1; i >= 0; i--)
         {
-            if (isFullBitArray(array))
+            if (isFullBitmap(bitmap))
             {
-                writeBitArray(array, outputFile);
-                clearBitArray(array);
+                writeBitmap(bitmap, outputFile);
+                clearBitmap(bitmap);
             }
 
-            insertLSBBitArray(array, code >> i);
+            insertLSBBitmap(bitmap, code >> i);
         }
     }
 
-    writeBitArray(array, outputFile);
+    writeBitmap(bitmap, outputFile);
 
-    lastValidBits = getBitsLengthBitArray(array) % 8;
+    lastValidBits = getBitsLengthBitmap(bitmap) % 8;
 
     if (lastValidBits > 0)
     {
@@ -120,7 +120,7 @@ int main(int argc, char const *argv[])
     free(table);
     fclose(inputFile);
     fclose(outputFile);
-    freeBitArray(array);
+    freeBitmap(bitmap);
     bufferFree(buffer);
 
     return 0;

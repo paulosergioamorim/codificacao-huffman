@@ -1,4 +1,5 @@
 #include "huffman.h"
+#include "utils.h"
 #include <assert.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -32,8 +33,8 @@ void helper_convertHuffmanTreeToTable(Tree *tree, unsigned int *table, unsigned 
 
     if (!isLeafTree(tree))
     {
-        helper_convertHuffmanTreeToTable(getLeftTree(tree), table, code << 1);
-        helper_convertHuffmanTreeToTable(getRightTree(tree), table, (code << 1) | 1);
+        helper_convertHuffmanTreeToTable(getLeftTree(tree), table, code << 0x01);
+        helper_convertHuffmanTreeToTable(getRightTree(tree), table, (code << 0x01) | 0x01);
         return;
     }
 
@@ -43,33 +44,33 @@ void helper_convertHuffmanTreeToTable(Tree *tree, unsigned int *table, unsigned 
 
 unsigned int *convertHuffmanTreeToTable(Tree *tree)
 {
-    unsigned int *table = calloc(UCHAR_MAX + 1, sizeof(unsigned int));
+    unsigned int *table = calloc(ASCII_SIZE, sizeof(unsigned int));
 
-    helper_convertHuffmanTreeToTable(tree, table, 1);
+    helper_convertHuffmanTreeToTable(tree, table, 0x01);
 
     return table;
 }
 
-void helper_serializeHuffmanTree(Tree *tree, BitArray *array)
+void helper_serializeHuffmanTree(Tree *tree, Bitmap *bitmap)
 {
     if (!tree)
         return;
 
     if (isLeafTree(tree))
     {
-        insertLSBBitArray(array, 0x01);
-        insertByteBitArray(array, getValueTree(tree));
+        insertLSBBitmap(bitmap, 0x01);
+        insertByteBitmap(bitmap, getValueTree(tree));
         return;
     }
 
-    insertLSBBitArray(array, 0x00);
-    helper_serializeHuffmanTree(getLeftTree(tree), array);
-    helper_serializeHuffmanTree(getRightTree(tree), array);
+    insertLSBBitmap(bitmap, 0x00);
+    helper_serializeHuffmanTree(getLeftTree(tree), bitmap);
+    helper_serializeHuffmanTree(getRightTree(tree), bitmap);
 }
 
-void serializeHuffmanTree(Tree *tree, BitArray *array)
+void serializeHuffmanTree(Tree *tree, Bitmap *bitmap)
 {
-    helper_serializeHuffmanTree(tree, array);
+    helper_serializeHuffmanTree(tree, bitmap);
 }
 
 int getSerializedHuffmanTreeSize(Tree *tree)
@@ -78,7 +79,7 @@ int getSerializedHuffmanTreeSize(Tree *tree)
     return leafNodesCount * 10 - 1;
 }
 
-void consumeBit(ReadBuffer *buffer, BitArray *array, Tree *huffmanTree, Tree **tree)
+void consumeBit(ReadBuffer *buffer, Bitmap *bitmap, Tree *huffmanTree, Tree **tree)
 {
     unsigned char bit = bufferNextBit(buffer);
     Tree *next = *tree;
@@ -93,7 +94,7 @@ void consumeBit(ReadBuffer *buffer, BitArray *array, Tree *huffmanTree, Tree **t
     }
 
     unsigned char value = getValueTree(next);
-    insertAlignedByteBitArray(array, value);
+    insertAlignedByteBitmap(bitmap, value);
     *tree = huffmanTree;
 }
 

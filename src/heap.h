@@ -1,4 +1,11 @@
+/*
+ * UFES - Universidade Federal do Espírito Santo
+ * Autor: Paulo Sérgio Amorim Mônico (@paulosergioamorim)
+ * Projeto: Compactador e Descompactador
+ */
+
 #pragma once
+
 #include "tree.h"
 
 typedef struct heap Heap;

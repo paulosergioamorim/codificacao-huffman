@@ -1,4 +1,4 @@
-#include "bitarray.h"
+#include "bitmap.h"
 #include "huffman.h"
 #include "readbuffer.h"
 #include "utils.h"
@@ -43,7 +43,7 @@ int main(int argc, char const *argv[])
     } // caso: arquivo vazio
 
     unsigned char lastValidBits = bufferNextAlignedByte(buffer);
-    BitArray *array = createStaticBitArray(BUFFER_SIZE);
+    Bitmap *bitmap = createStaticBitmap(BUFFER_SIZE);
     Tree *huffmanTree = createHuffmanTreeFromFile(buffer);
 
     if (bufferIsLastByte(buffer))
@@ -53,22 +53,22 @@ int main(int argc, char const *argv[])
 
     while (lastValidBits)
     {
-        consumeBit(buffer, array, huffmanTree, &cur);
+        consumeBit(buffer, bitmap, huffmanTree, &cur);
 
         if (bufferIsLastByte(buffer))
             lastValidBits--; // caso: consimiu um bit do último byte
 
-        if (!lastValidBits || isFullBitArray(array))
+        if (!lastValidBits || isFullBitmap(bitmap))
         {
-            writeBitArray(array, outputFile);
-            clearBitArray(array);
+            writeBitmap(bitmap, outputFile);
+            clearBitmap(bitmap);
         } // caso: escrever um bloco inteiro ou o último bloco
     }
 
     freeTree(huffmanTree);
     fclose(inputFile);
     fclose(outputFile);
-    freeBitArray(array);
+    freeBitmap(bitmap);
     bufferFree(buffer);
 
     return 0;

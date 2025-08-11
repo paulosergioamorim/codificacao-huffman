@@ -4,7 +4,7 @@ RELEASE_FLAGS = -O2
 DEBUG_FLAGS = -g -O0 -DDEBUG
 SRC = ./src
 
-COMMON_SOURCES = $(SRC)/tree.c $(SRC)/bitarray.c $(SRC)/readbuffer.c $(SRC)/huffman.c $(SRC)/heap.c $(SRC)/utils.c
+COMMON_SOURCES = $(SRC)/tree.c $(SRC)/bitmap.c $(SRC)/readbuffer.c $(SRC)/huffman.c $(SRC)/heap.c $(SRC)/utils.c
 
 all: compacta descompacta
 
