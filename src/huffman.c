@@ -84,23 +84,19 @@ int getSerializedHuffmanTreeSize(Tree *tree)
     return leafNodesCount * 10 - 1;
 }
 
-void consumeBit(ReadBuffer *buffer, Bitmap *bitmap, Tree *huffmanTree, Tree **tree)
+Tree *consumeBit(ReadBuffer *buffer, Bitmap *bitmap, Tree *huffmanTree, Tree *tree)
 {
     unsigned char bit = bufferNextBit(buffer);
-    Tree *next = *tree;
 
     if (!isLeafTree(huffmanTree))
-        next = decodeTable[bit](next); // caso: raiz da árvore de huffman não é uma folha
+        tree = decodeTable[bit](tree); // caso: raiz da árvore de huffman não é uma folha
 
-    if (!isLeafTree(next))
-    {
-        *tree = next;
-        return;
-    }
+    if (!isLeafTree(tree))
+        return tree; // caso: avança para esquerda ou direitra da árvore
 
-    unsigned char value = getValueTree(next);
+    unsigned char value = getValueTree(tree);
     insertAlignedByteBitmap(bitmap, value);
-    *tree = huffmanTree;
+    return huffmanTree; // caso: decodificou um byte e retorna para a raíz da árvore
 }
 
 Tree *createHuffmanTreeFromFile(ReadBuffer *buffer)

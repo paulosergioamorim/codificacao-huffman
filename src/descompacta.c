@@ -60,7 +60,7 @@ int main(int argc, char const *argv[])
 
     while (lastValidBits)
     {
-        consumeBit(buffer, bitmap, huffmanTree, &cur);
+        cur = consumeBit(buffer, bitmap, huffmanTree, cur);
 
         if (bufferIsLastByte(buffer))
             lastValidBits--; // caso: consimiu um bit do último byte

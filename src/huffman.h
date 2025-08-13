@@ -62,10 +62,10 @@ int getSerializedHuffmanTreeSize(Tree *tree);
  * @param buffer O buffer de leitura de onde os bits compactados são lidos.
  * @param bitmap O bitmap de saída onde os bytes descompactados são escritos.
  * @param huffmanTree A raiz da árvore de Huffman (usada para resetar a navegação).
- * @param tree Parâmetro de entrada/saída. É um ponteiro para o ponteiro do nó
- * de navegação atual. A função o atualiza a cada bit consumido.
+ * @param tree Nó atual da leitura.
+ * @return O próximo nó
  */
-void consumeBit(ReadBuffer *buffer, Bitmap *bitmap, Tree *huffmanTree, Tree **tree);
+Tree *consumeBit(ReadBuffer *buffer, Bitmap *bitmap, Tree *huffmanTree, Tree *tree);
 
 /**
  * @brief Reconstrói a Árvore de Huffman a partir de sua representação serializada em um arquivo.
