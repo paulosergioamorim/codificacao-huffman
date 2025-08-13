@@ -1,3 +1,8 @@
+/**
+ * @file heap.c
+ * @author Paulo Sérgio Amorim Mônico (@paulosergioamorim)
+ */
+
 #include "heap.h"
 #include <assert.h>
 #include <stdio.h>
@@ -24,7 +29,7 @@ Heap *createHeap(int maxCapacity)
 
 void pushHeap(Heap *heap, Tree *tree)
 {
-    int i = heap->size++;
+    int i = heap->size++; // i é o novo último índice e aumenta o tamanho
 
     while (i > 0)
     {
@@ -32,13 +37,14 @@ void pushHeap(Heap *heap, Tree *tree)
         Tree *parent = heap->vec[parentIndex];
 
         if (compareFrequencyTrees(tree, parent))
-            break;
+            break; // caso: i deve ser filho de parent
 
+        // caso: parent na verdade é filho de i
         heap->vec[i] = parent;
-        i = parentIndex;
-    }
+        i = parentIndex; // parent é o novo i
+    } // balanceamento da heap
 
-    heap->vec[i] = tree;
+    heap->vec[i] = tree; // posição final do novo elemento
 }
 
 Tree *popHeap(Heap *heap)
@@ -47,29 +53,30 @@ Tree *popHeap(Heap *heap)
         return NULL;
 
     Tree *min = heap->vec[0];
-    heap->vec[0] = heap->vec[--heap->size];
+    heap->vec[0] = heap->vec[--heap->size]; // diminui o tamanho e move o último elemento da heap para o início
     int i = 0;
 
     while (1)
     {
-        int left = 2 * i + 1;
-        int right = 2 * i + 2;
-        int smallest = i;
+        int left = 2 * i + 1;  // índice filho essquerdo de i
+        int right = 2 * i + 2; // índice filho direito de i
+        int smallest = i;      // caso: suponha que o menor seja i = 0
 
         if (left < heap->size && compareFrequencyTrees(heap->vec[smallest], heap->vec[left]))
-            smallest = left;
+            smallest = left; // caso: o filho esquerdo de i na verdade é menor que i
 
         if (right < heap->size && compareFrequencyTrees(heap->vec[smallest], heap->vec[right]))
-            smallest = right;
+            smallest = right; // caso: o filho direito de i na verdade é menor que i
 
         if (smallest == i)
-            break;
+            break; // caso: a heap está balanceada
 
+        // Agora, já sabemos os índices que devem realizar a troca
         Tree *temp = heap->vec[i];
         heap->vec[i] = heap->vec[smallest];
         heap->vec[smallest] = temp;
-        i = smallest;
-    }
+        i = smallest; // o menor é o novo i
+    } // balanceamento da heap
 
     return min;
 }

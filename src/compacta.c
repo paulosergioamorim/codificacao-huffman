@@ -1,3 +1,9 @@
+/**
+ * @file compacta.c
+ * @author Paulo Sérgio Amorim Mônico (@paulosergioamorim)
+ * @brief Programa Compactador
+ */
+
 #include "huffman.h"
 #include "readbuffer.h"
 #include "utils.h"
@@ -13,25 +19,25 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-    FILE *inputFile = NULL;
-    FILE *outputFile = NULL;
+    FILE *inputFile = fopen(argv[1], "rb");
 
-    if (!(inputFile = fopen(argv[1], "rb")))
+    if (!inputFile)
     {
         fprintf(stderr, "Falha ao abrir arquivo de entrada.\n");
         return 1;
     }
 
     char *outputFileName = addExtentionToString(argv[1]);
+    FILE *outputFile = fopen(outputFileName, "wb");
+    free(outputFileName);
 
-    if (!(outputFile = fopen(outputFileName, "wb")))
+    if (!outputFile)
     {
         fprintf(stderr, "Falha ao abrir arquivo de saída.\n");
         fclose(inputFile);
         return 1;
     }
 
-    free(outputFileName);
     ReadBuffer *buffer = bufferInit(inputFile);
 
     if (!bufferHasNextByte(buffer))

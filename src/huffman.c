@@ -1,3 +1,8 @@
+/**
+ * @file huffman.c
+ * @author Paulo Sérgio Amorim Mônico (@paulosergioamorim)
+ */
+
 #include "huffman.h"
 #include "utils.h"
 #include <assert.h>

@@ -1,3 +1,9 @@
+/**
+ * @file descompacta.c
+ * @author Paulo Sérgio Amorim Mônico (@paulosergioamorim)
+ * @brief Programa Descompactador
+ */
+
 #include "bitmap.h"
 #include "huffman.h"
 #include "readbuffer.h"
@@ -14,18 +20,19 @@ int main(int argc, char const *argv[])
         return 1;
     }
 
-    FILE *inputFile = NULL;
-    FILE *outputFile = NULL;
+    FILE *inputFile = fopen(argv[1], "rb");
 
-    if (!(inputFile = fopen(argv[1], "rb")))
+    if (!inputFile)
     {
         fprintf(stderr, "Falha ao abrir arquivo de entrada.\n");
         return 1;
     }
 
-    removeExtentionFromString(argv[1]);
+    char *outputFileName = removeExtentionFromString(argv[1]);
+    FILE *outputFile = fopen(outputFileName, "wb");
+    free(outputFileName);
 
-    if (!(outputFile = fopen(argv[1], "wb")))
+    if (!outputFileName)
     {
         fprintf(stderr, "Falha ao abrir arquivo de saída.\n");
         fclose(inputFile);

@@ -1,3 +1,8 @@
+/**
+ * @file utils.c
+ * @author Paulo Sérgio Amorim Mônico (@paulosergioamorim)
+ */
+
 #include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,8 +18,10 @@ char *addExtentionToString(const char *str)
     return newStr;
 }
 
-void removeExtentionFromString(const char *str)
+char *removeExtentionFromString(const char *str)
 {
-    char *lastDot = strrchr(str, '.');
+    char *newStr = strdup(str);
+    char *lastDot = strrchr(newStr, '.');
     *lastDot = 0;
+    return newStr;
 }

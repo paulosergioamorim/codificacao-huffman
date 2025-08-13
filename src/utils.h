@@ -1,15 +1,41 @@
-/*
- * UFES - Universidade Federal do Espírito Santo
- * Autor: Paulo Sérgio Amorim Mônico (@paulosergioamorim)
- * Projeto: Compactador e Descompactador
+/**
+ * @file utils.h
+ * @author Paulo Sérgio Amorim Mônico (@paulosergioamorim)
+ * @brief Cabeçalho para funções utilitárias do projeto Compactador e Descompactador.
+ * @details Este arquivo define macros e protótipos de funções auxiliares,
+ * como manipulação de strings para nomes de arquivos.
  */
 
 #pragma once
 
 #include <limits.h>
 
+/**
+ * @def ASCII_SIZE
+ * @brief Define o número total de caracteres possíveis em uma tabela ASCII estendida (8 bits).
+ * @details O valor é 256 (de 0 a 255), correspondendo a todos os valores que um
+ * tipo `unsigned char` pode representar. Útil para criar tabelas de frequência de bytes.
+ */
 #define ASCII_SIZE UCHAR_MAX + 1
 
+/**
+ * @brief Adiciona a extensão ".comp" a uma string.
+ * @details Esta função recebe uma string, aloca memória para uma nova string
+ * e retorna essa nova string com a extensão ".comp" concatenada ao final.
+ *
+ * @param str A string original à qual a extensão será adicionada.
+ * @return Um ponteiro para uma **nova string alocada dinamicamente** contendo o resultado.
+ * O chamador é responsável por liberar a memória alocada com `free()`.
+ */
 char *addExtentionToString(const char *str);
 
-void removeExtentionFromString(const char *str);
+/**
+ * @brief Remove a extensão de um nome de arquivo, retornando uma nova string.
+ * @details A função cria uma cópia da string de entrada e a trunca no último
+ * caractere '.', removendo a extensão. A string original não é modificada.
+ *
+ * @param str A string original da qual a extensão será removida.
+ * @return Um ponteiro para uma **nova string alocada dinamicamente** sem a extensão.
+ * O chamador é responsável por liberar a memória alocada com `free()`.
+ */
+char *removeExtentionFromString(const char *str);

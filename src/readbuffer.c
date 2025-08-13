@@ -1,3 +1,8 @@
+/**
+ * @file readbuffer.c
+ * @author Paulo Sérgio Amorim Mônico (@paulosergioamorim)
+ */
+
 #include "readbuffer.h"
 #include <stdlib.h>
 #include <string.h>
@@ -109,8 +114,8 @@ int bufferGetBitIndex(ReadBuffer *buffer)
 
 void bufferFetch(ReadBuffer *buffer)
 {
-    buffer->endOfFile =
-        (buffer->bytesCount = fread(buffer->vec, sizeof(unsigned char), BUFFER_SIZE, buffer->fp)) < BUFFER_SIZE;
+    buffer->bytesCount = fread(buffer->vec, sizeof(unsigned char), BUFFER_SIZE, buffer->fp);
+    buffer->endOfFile = buffer->bytesCount < BUFFER_SIZE;
     buffer->byteIndex = 0;
     buffer->bitIndex = 8;
 }

@@ -1,3 +1,8 @@
+/**
+ * @file tree.c
+ * @author Paulo Sérgio Amorim Mônico (@paulosergioamorim)
+ */
+
 #include "tree.h"
 #include <assert.h>
 #include <limits.h>

@@ -1,3 +1,8 @@
+/**
+ * @file bitmap.c
+ * @author Paulo Sérgio Amorim Mônico (@paulosergioamorim)
+ */
+
 #include "bitmap.h"
 #include <assert.h>
 #include <stdlib.h>
