@@ -55,8 +55,7 @@ unsigned int *convertHuffmanTreeToTable(Tree *tree)
 
     return table;
 }
-
-void helper_serializeHuffmanTree(Tree *tree, Bitmap *bitmap)
+void serializeHuffmanTree(Tree *tree, Bitmap *bitmap)
 {
     if (!tree)
         return;
@@ -69,13 +68,8 @@ void helper_serializeHuffmanTree(Tree *tree, Bitmap *bitmap)
     }
 
     insertLSBBitmap(bitmap, 0x00);
-    helper_serializeHuffmanTree(getLeftTree(tree), bitmap);
-    helper_serializeHuffmanTree(getRightTree(tree), bitmap);
-}
-
-void serializeHuffmanTree(Tree *tree, Bitmap *bitmap)
-{
-    helper_serializeHuffmanTree(tree, bitmap);
+    serializeHuffmanTree(getLeftTree(tree), bitmap);
+    serializeHuffmanTree(getRightTree(tree), bitmap);
 }
 
 int getSerializedHuffmanTreeSize(Tree *tree)
