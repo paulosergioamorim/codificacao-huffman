@@ -39,7 +39,7 @@ int main(int argc, char const *argv[])
         return 1;
     }
 
-    ReadBuffer *buffer = bufferInit(inputFile);
+    ReadBuffer *buffer = bufferInit(inputFile, BUFFER_SIZE);
 
     if (!bufferHasNextByte(buffer))
     {
@@ -54,7 +54,7 @@ int main(int argc, char const *argv[])
     Tree *huffmanTree = createHuffmanTreeFromFile(buffer);
 
     if (bufferIsLastByte(buffer))
-        lastValidBits -= (8 - bufferGetBitIndex(buffer)); // caso: árvore serializada consumiu bits do último byte
+        lastValidBits -= (8 - bufferGetBitsLeft(buffer)); // caso: árvore serializada consumiu bits do último byte
 
     Tree *cur = huffmanTree;
 

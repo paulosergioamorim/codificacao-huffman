@@ -16,7 +16,7 @@ int main(int argc, char const *argv[])
     if (argc < 2)
     {
         fprintf(stderr, "Insira um arquivo para comprimir.\n");
-        exit(1);
+        return 1;
     }
 
     FILE *inputFile = fopen(argv[1], "rb");
@@ -38,7 +38,7 @@ int main(int argc, char const *argv[])
         return 1;
     }
 
-    ReadBuffer *buffer = bufferInit(inputFile);
+    ReadBuffer *buffer = bufferInit(inputFile, BUFFER_SIZE);
 
     if (!bufferHasNextByte(buffer))
     {

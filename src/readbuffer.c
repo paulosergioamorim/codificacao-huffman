@@ -11,40 +11,42 @@ struct readbuffer
 {
     FILE *fp;
     unsigned char *vec;
-    int byteIndex;
-    int bytesCount;
-    int bitIndex;
+    unsigned int maxCapacity;
+    unsigned int byteIndex;
+    unsigned int bytesCount;
+    int bitsLeft;
     int endOfFile;
 };
 
 void bufferFetch(ReadBuffer *buffer);
 
-ReadBuffer *bufferInit(FILE *fp)
+ReadBuffer *bufferInit(FILE *fp, unsigned int maxCapacity)
 {
     ReadBuffer *buffer = malloc(sizeof(ReadBuffer));
     buffer->fp = fp;
-    buffer->vec = calloc(BUFFER_SIZE, sizeof(unsigned char));
-    buffer->bitIndex = buffer->bytesCount = buffer->endOfFile = buffer->byteIndex = 0;
+    buffer->maxCapacity = maxCapacity;
+    buffer->vec = calloc(buffer->maxCapacity, sizeof(unsigned char));
+    buffer->bitsLeft = buffer->bytesCount = buffer->endOfFile = buffer->byteIndex = 0;
 
     return buffer;
 }
 
 unsigned char bufferNextBit(ReadBuffer *buffer)
 {
-    if (buffer->bitIndex == 0)
+    if (buffer->bitsLeft == 0)
     {
-        buffer->bitIndex = 8;
+        buffer->bitsLeft = 8;
         buffer->byteIndex++;
 
         if (buffer->byteIndex == buffer->bytesCount)
-            bufferFetch(buffer);
-    }
+            bufferFetch(buffer); // caso: consumiu o buffer inteiro
+    } // caso: consumiu um byte
 
     unsigned char bit = buffer->vec[buffer->byteIndex];
     bit >>= 7;
     bit &= 0x01;
     buffer->vec[buffer->byteIndex] <<= 1;
-    buffer->bitIndex--;
+    buffer->bitsLeft--;
     return bit;
 }
 
@@ -103,19 +105,19 @@ void bufferFree(ReadBuffer *buffer)
 void bufferReset(ReadBuffer *buffer)
 {
     fseek(buffer->fp, 0, SEEK_SET);
-    buffer->bitIndex = buffer->bytesCount = buffer->endOfFile = buffer->byteIndex = 0;
-    memset(buffer->vec, 0, BUFFER_SIZE);
+    buffer->bitsLeft = buffer->bytesCount = buffer->endOfFile = buffer->byteIndex = 0;
+    memset(buffer->vec, 0, buffer->maxCapacity);
 }
 
-int bufferGetBitIndex(ReadBuffer *buffer)
+int bufferGetBitsLeft(ReadBuffer *buffer)
 {
-    return buffer->bitIndex;
+    return buffer->bitsLeft;
 }
 
 void bufferFetch(ReadBuffer *buffer)
 {
-    buffer->bytesCount = fread(buffer->vec, sizeof(unsigned char), BUFFER_SIZE, buffer->fp);
-    buffer->endOfFile = buffer->bytesCount < BUFFER_SIZE;
+    buffer->bytesCount = fread(buffer->vec, sizeof(unsigned char), buffer->maxCapacity, buffer->fp);
+    buffer->endOfFile = buffer->bytesCount < buffer->maxCapacity;
     buffer->byteIndex = 0;
-    buffer->bitIndex = 8;
+    buffer->bitsLeft = 8;
 }

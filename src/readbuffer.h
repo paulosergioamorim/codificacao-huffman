@@ -13,15 +13,6 @@
 #include <stdio.h>
 
 /**
- * @def BUFFER_SIZE
- * @brief Define o tamanho do buffer interno de memória em bytes.
- * @details Um buffer maior resulta em menos chamadas de leitura ao disco (`fread`),
- * melhorando a performance, ao custo de um maior uso de memória RAM.
- * O valor atual é 1MB.
- */
-#define BUFFER_SIZE 1024 * 1024
-
-/**
  * @typedef ReadBuffer
  * @brief Tipo opaco que encapsula o estado do buffer de leitura.
  */
@@ -31,9 +22,10 @@ typedef struct readbuffer ReadBuffer;
  * @brief Cria e inicializa um novo buffer de leitura.
  * @param fp O ponteiro de arquivo (`FILE*`) para o arquivo a ser lido.
  * O arquivo deve ser aberto em modo de leitura binária (ex: "rb").
+ * @param maxCapacity capacidade máxima do buffer em **bytes**.
  * @return Um ponteiro para a estrutura `ReadBuffer` recém-alocada.
  */
-ReadBuffer *bufferInit(FILE *fp);
+ReadBuffer *bufferInit(FILE *fp, unsigned int maxCapacity);
 
 /**
  * @brief Lê o próximo bit do stream de dados.
@@ -92,10 +84,10 @@ void bufferReset(ReadBuffer *buffer);
 void bufferFree(ReadBuffer *buffer);
 
 /**
- * @brief Retorna o índice do bit atual dentro do byte corrente.
+ * @brief Retorna quantos bits do atual byte restam para ler.
  * @details O valor varia de 8 (início de um byte) a 1. Pode ser usado para
  * verificar se o leitor está em uma fronteira de byte.
  * @param buffer O ponteiro para o buffer de leitura.
- * @return O índice do bit (8 a 1).
+ * @return Quantos bits restam do byte atual (8 a 1).
  */
-int bufferGetBitIndex(ReadBuffer *buffer);
+int bufferGetBitsLeft(ReadBuffer *buffer);

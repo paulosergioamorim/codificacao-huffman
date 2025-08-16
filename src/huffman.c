@@ -86,7 +86,7 @@ Tree *consumeBit(ReadBuffer *buffer, Bitmap *bitmap, Tree *huffmanTree, Tree *tr
         tree = decodeTable[bit](tree); // caso: raiz da árvore de huffman não é uma folha
 
     if (!isLeafTree(tree))
-        return tree; // caso: avança para esquerda ou direitra da árvore
+        return tree; // caso: avança para esquerda ou direita da árvore
 
     unsigned char value = getValueTree(tree);
     insertAlignedByteBitmap(bitmap, value);

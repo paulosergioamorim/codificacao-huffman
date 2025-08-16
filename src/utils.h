@@ -19,6 +19,15 @@
 #define ASCII_SIZE UCHAR_MAX + 1
 
 /**
+ * @def BUFFER_SIZE
+ * @brief Define o tamanho do buffer interno de memória em bytes.
+ * @details Um buffer maior resulta em menos chamadas de leitura ao disco (`fread`),
+ * melhorando a performance, ao custo de um maior uso de memória RAM.
+ * O valor atual é 1MB.
+ */
+#define BUFFER_SIZE 1024 * 1024
+
+/**
  * @brief Adiciona a extensão ".comp" a uma string.
  * @details Esta função recebe uma string, aloca memória para uma nova string
  * e retorna essa nova string com a extensão ".comp" concatenada ao final.
