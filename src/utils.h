@@ -2,8 +2,7 @@
  * @file utils.h
  * @author Paulo Sérgio Amorim Mônico (@paulosergioamorim)
  * @brief Cabeçalho para funções utilitárias do projeto Compactador e Descompactador.
- * @details Este arquivo define macros e protótipos de funções auxiliares,
- * como manipulação de strings para nomes de arquivos.
+ * @details Este arquivo define macros e funções auxiliares
  */
 
 #pragma once

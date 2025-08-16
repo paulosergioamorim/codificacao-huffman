@@ -2,10 +2,6 @@
  * @file readbuffer.h
  * @author Paulo Sérgio Amorim Mônico (@paulosergioamorim)
  * @brief Cabeçalho para o TAD de Buffer de Leitura.
- * @details Este módulo implementa um buffer de leitura de alta performance,
- * projetado para minimizar chamadas de I/O ao ler arquivos grandes. Ele lê
- * pedaços (chunks) do arquivo para a memória e fornece funções para consumir
- * dados tanto bit a bit quanto byte a byte.
  */
 
 #pragma once

@@ -79,9 +79,6 @@ int bufferHasNextByte(ReadBuffer *buffer)
     if (buffer->byteIndex == buffer->bytesCount)
         bufferFetch(buffer);
 
-    if (!buffer->bytesCount)
-        return 0;
-
     return !buffer->endOfFile || buffer->byteIndex < buffer->bytesCount;
 }
 
