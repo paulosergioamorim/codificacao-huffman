@@ -7,9 +7,12 @@
 #include "huffman.h"
 #include "readbuffer.h"
 #include "utils.h"
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifndef __GNUC__
+#include <math.h>
+#endif
 
 int main(int argc, char const *argv[])
 {
@@ -74,32 +77,36 @@ int main(int argc, char const *argv[])
     Tree *huffmanTree = convertToHuffmanTree(heap);
     unsigned int *table = convertHuffmanTreeToTable(huffmanTree);
     Bitmap *bitmap = createStaticBitmap(BUFFER_SIZE);
-    unsigned char lastValidBits = 8;
-
-    fwrite(&lastValidBits, sizeof(unsigned char), 1,
-           outputFile); // caso: suponha que todos os últimos bits são válidos
     serializeHuffmanTree(huffmanTree, bitmap);
     freeTree(huffmanTree);
+
+    unsigned char lastValidBits = 8;
+    fwrite(&lastValidBits, sizeof(unsigned char), 1,
+           outputFile); // caso: suponha que todos os últimos bits são válidos
     bufferReset(buffer);
 
     while (bufferHasNextByte(buffer))
     {
         unsigned char byte = bufferNextAlignedByte(buffer);
-
         unsigned int code = table[byte];
-        int len = log2(code);
 
         if (code == 1 && isFullBitmap(bitmap))
         {
             writeBitmap(bitmap, outputFile);
             clearBitmap(bitmap);
-        }
+        } // caso: arquivo com 1 valor de byte e bitmap cheio
 
         if (code == 1)
         {
             insertLSBBitmap(bitmap, 0);
             continue;
-        }
+        } // caso: arquivo com 1 valor de byte
+
+#ifdef __GNUC__
+        int len = 31 - __builtin_clz(code); // compila diretamente para instrução de máquina (count leading zeros)
+#else
+        int len = log2(code);
+#endif
 
         for (int i = len - 1; i >= 0; i--)
         {
@@ -107,14 +114,13 @@ int main(int argc, char const *argv[])
             {
                 writeBitmap(bitmap, outputFile);
                 clearBitmap(bitmap);
-            }
+            } // caso: bitmap cheio
 
             insertLSBBitmap(bitmap, code >> i);
         }
     }
 
     writeBitmap(bitmap, outputFile);
-
     lastValidBits = getBitsLengthBitmap(bitmap) % 8;
 
     if (lastValidBits > 0)
