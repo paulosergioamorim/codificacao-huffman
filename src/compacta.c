@@ -4,6 +4,7 @@
  * @brief Programa Compactador
  */
 
+#include "heap.h"
 #include "huffman.h"
 #include "readbuffer.h"
 #include "utils.h"
@@ -74,7 +75,7 @@ int main(int argc, char const *argv[])
             pushHeap(heap, tree);
         }
 
-    Tree *huffmanTree = convertToHuffmanTree(heap);
+    Tree *huffmanTree = convertHeapToHuffmanTree(heap);
     unsigned int *table = convertHuffmanTreeToTable(huffmanTree);
     Bitmap *bitmap = createStaticBitmap(BUFFER_SIZE);
     serializeHuffmanTree(huffmanTree, bitmap);

@@ -52,8 +52,11 @@ void freeHeap(Heap *heap);
 void printHeap(Heap *heap);
 
 /**
- * @brief Retorna o número atual de elementos na heap.
- * @param heap A heap a ser consultada.
- * @return O número de elementos presentes na heap.
+ * @brief Constrói a Árvore de Huffman a partir de uma fila de prioridade (min-heap).
+ * @param heap A min-heap contendo os nós folha (caracteres e suas frequências).
+ * @warning A heap fornecida é consumida e **liberada** ao final da execução desta função.
+ * O chamador não deve mais usar o ponteiro da heap após esta chamada.
+ *
+ * @return Um ponteiro para a raiz da Árvore de Huffman completa.
  */
-int getSizeHeap(Heap *heap);
+Tree *convertHeapToHuffmanTree(Heap *heap);

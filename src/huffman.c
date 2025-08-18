@@ -13,24 +13,6 @@ typedef Tree *(*table_fn)(Tree *);
 
 static table_fn decodeTable[2] = {getLeftTree, getRightTree};
 
-Tree *convertToHuffmanTree(Heap *heap)
-{
-    while (getSizeHeap(heap) > 1)
-    {
-        Tree *tree1 = popHeap(heap);
-        Tree *tree2 = popHeap(heap);
-        Tree *tree3 = createTree(0, getFrequencyTree(tree1) + getFrequencyTree(tree2));
-        setLeftTree(tree3, tree1);
-        setRightTree(tree3, tree2);
-        pushHeap(heap, tree3);
-    }
-
-    Tree *huffmanTree = popHeap(heap);
-    freeHeap(heap);
-
-    return huffmanTree;
-}
-
 void helper_convertHuffmanTreeToTable(Tree *tree, unsigned int *table, unsigned int code)
 {
     if (!tree)

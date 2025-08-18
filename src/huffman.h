@@ -7,25 +7,9 @@
 #pragma once
 
 #include "bitmap.h"
-#include "heap.h"
 #include "readbuffer.h"
 #include "tree.h"
 #include <stdio.h>
-
-/**
- * @brief Constrói a Árvore de Huffman a partir de uma fila de prioridade (min-heap).
- * @details Esta função implementa o algoritmo de Huffman. Ela remove iterativamente
- * os dois nós de menor frequência da heap, cria um novo nó pai com a soma das
- * frequências e o insere de volta na heap. O processo continua até que reste
- * apenas um nó: a raiz da árvore de Huffman.
- *
- * @param heap A min-heap contendo os nós folha (caracteres e suas frequências).
- * @warning A heap fornecida é consumida e **liberada** ao final da execução desta função.
- * O chamador não deve mais usar o ponteiro da heap após esta chamada.
- *
- * @return Um ponteiro para a raiz da Árvore de Huffman completa.
- */
-Tree *convertToHuffmanTree(Heap *heap);
 
 /**
  * @brief Converte a Árvore de Huffman em uma tabela de consulta de códigos.
