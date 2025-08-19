@@ -23,7 +23,7 @@
  * @details Um buffer maior resulta em menos chamadas de leitura ao disco (`fread`),
  * melhorando a performance, ao custo de um maior uso de memória RAM.
  * O valor atual é 1MB. Esse buffer é maior do que o tamanho máximo que uma árvore de Huffman pode ocupar
- * (importante para o bitmap de compactação).
+ * (9 * 256 + 255) (importante para o bitmap de compactação).
  */
 #define BUFFER_SIZE 1024 * 1024
 
