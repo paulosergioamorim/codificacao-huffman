@@ -15,75 +15,67 @@
 typedef struct readbuffer ReadBuffer;
 
 /**
- * @brief Cria e inicializa um novo buffer de leitura.
- * @param fp O ponteiro de arquivo (`FILE*`) para o arquivo a ser lido.
- * O arquivo deve ser aberto em modo de leitura binária (ex: "rb").
- * @param maxCapacity capacidade máxima do buffer em **bytes**.
- * @return Um ponteiro para a estrutura `ReadBuffer` recém-alocada.
+ * @brief Inicializa um novo buffer de leitura com capacidade fixa.
+ * @param fp Ponteiro para o arquivo aberto em modo binário de leitura.
+ * @param maxCapacity Capacidade máxima do buffer em bytes.
+ * @return Ponteiro para o buffer alocado.
  */
 ReadBuffer *bufferInit(FILE *fp, unsigned int maxCapacity);
 
 /**
- * @brief Lê o próximo bit do stream de dados.
- * @param buffer O ponteiro para o buffer de leitura.
- * @return O valor do bit lido (0 ou 1).
+ * @brief Lê o próximo bit do fluxo de dados.
+ * @param buffer Buffer de leitura.
+ * @return Bit lido (0 ou 1).
  */
 unsigned char bufferNextBit(ReadBuffer *buffer);
 
 /**
- * @brief Lê o próximo byte do stream de dados, compondo-o bit a bit.
- * @details Esta função chama `bufferNextBit` 8 vezes para construir um byte.
- * É a maneira correta de ler dados de conteúdo (decodificados), pois respeita
- * o fluxo de bits, que pode não estar alinhado com os bytes originais do arquivo.
- * @param buffer O ponteiro para o buffer de leitura.
- * @return O byte lido.
+ * @brief Lê o próximo byte desalinhado.
+ * @param buffer Buffer de leitura.
+ * @return Byte lido (pode cruzar fronteiras de byte).
  */
 unsigned char bufferNextByte(ReadBuffer *buffer);
 
 /**
- * @brief Lê o próximo byte completo diretamente do buffer.
- * @details Esta função é mais rápida que `bufferNextByte`, pois lê o byte
- * diretamente da memória. Deve ser usada apenas para ler dados que se sabe
- * estarem alinhados por byte, como o cabeçalho do arquivo.
- * @param buffer O ponteiro para o buffer de leitura.
- * @return O byte lido.
+ * @brief Lê o próximo byte alinhado.
+ * @param buffer Buffer de leitura.
+ * @return Byte lido.
+ * @details Pode causar perda de dados se o buffer estiver desalinhado.
  */
 unsigned char bufferNextAlignedByte(ReadBuffer *buffer);
 
 /**
- * @brief Verifica se o byte atual é o último byte do arquivo.
- * @param buffer O ponteiro para o buffer de leitura.
- * @return 1 (verdadeiro) se o cursor está no último byte do arquivo, 0 caso contrário.
+ * @brief Verifica se o byte atual é o último do arquivo.
+ * @param buffer Buffer de leitura.
+ * @return 1 se for o último byte, 0 caso contrário.
  */
 int bufferIsLastByte(ReadBuffer *buffer);
 
 /**
- * @brief Verifica se ainda há bytes a serem lidos no arquivo.
- * @param buffer O ponteiro para o buffer de leitura.
- * @return 1 (verdadeiro) se houver pelo menos mais um byte para ler, 0 se o fim
- * do arquivo foi alcançado.
+ * @brief Verifica se há mais bytes disponíveis para leitura.
+ *
+ * @param buffer Buffer de leitura.
+ * @return 1 se houver bytes restantes, 0 se for fim de arquivo.
  */
 int bufferHasNextByte(ReadBuffer *buffer);
 
 /**
- * @brief Reinicia o estado do buffer e reposiciona o ponteiro do arquivo para o início.
- * @param buffer O ponteiro para o buffer de leitura.
+ * @brief Reinicia o buffer e reposiciona o arquivo para o início.
+ *
+ * @param buffer Buffer de leitura.
  */
 void bufferReset(ReadBuffer *buffer);
 
 /**
- * @brief Libera toda a memória associada ao buffer de leitura.
- * @note Esta função **não** fecha o ponteiro de arquivo (`FILE*`) que foi
- * passado para `bufferInit`. O chamador é responsável por fechar o arquivo.
- * @param buffer O ponteiro para o buffer a ser liberado.
+ * @brief Libera a memória associada ao buffer.
+ * @param buffer Buffer a ser liberado.
+ * @note O ponteiro de arquivo não é fechado por esta função.
  */
 void bufferFree(ReadBuffer *buffer);
 
 /**
- * @brief Retorna quantos bits do atual byte restam para ler.
- * @details O valor varia de 8 (início de um byte) a 1. Pode ser usado para
- * verificar se o leitor está em uma fronteira de byte.
- * @param buffer O ponteiro para o buffer de leitura.
- * @return Quantos bits restam do byte atual (8 a 1).
+ * @brief Retorna quantos bits restam para ler no byte atual.
+ * @param buffer Buffer de leitura.
+ * @return Valor de 1 a 8.
  */
 int bufferGetBitsLeft(ReadBuffer *buffer);

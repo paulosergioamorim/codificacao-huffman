@@ -12,49 +12,39 @@
 #include <stdio.h>
 
 /**
- * @brief Converte a Árvore de Huffman em uma tabela de consulta de códigos.
- * @details Percorre a árvore para gerar os códigos binários para cada caractere.
- * O resultado é uma tabela onde o índice é o valor do byte (0-255) e o conteúdo
- * é o seu código de Huffman correspondente, representado como um `unsigned int`.
- *
- * @param tree A raiz da Árvore de Huffman.
- * @return Um ponteiro para a tabela (array) de códigos alocada dinamicamente.
- * O chamador é responsável por liberar esta memória com `free()`.
+ * @brief Gera a tabela de códigos a partir da Árvore de Huffman.
+ * @param tree Raiz da árvore de Huffman.
+ * @return Ponteiro para um array com os códigos gerados (alocado dinamicamente).
  */
 unsigned int *convertHuffmanTreeToTable(Tree *tree);
 
 /**
- * @brief Serializa a estrutura da Árvore de Huffman em um fluxo de bits (bitmap).
- *
- * @param tree A raiz da Árvore de Huffman a ser serializada.
- * @param bitmap O bitmap onde a representação da árvore será escrita.
+ * @brief Serializa a Árvore de Huffman para um fluxo de bits.
+ * @param tree Raiz da árvore a ser serializada.
+ * @param bitmap Bitmap onde os bits da árvore serão armazenados.
  */
 void serializeHuffmanTree(Tree *tree, Bitmap *bitmap);
 
 /**
- * @brief Calcula o tamanho, em bits, da representação serializada da árvore.
- * @details Retorna o número de bits necessários para armazenar a árvore serializada.
- *
- * @param tree A raiz da Árvore de Huffman.
- * @return O tamanho em bits da árvore serializada.
+ * @brief Calcula o número de bits necessários para representar a árvore serializada.
+ * @param tree Raiz da árvore de Huffman.
+ * @return Quantidade de bits da serialização.
  */
 int getSerializedHuffmanTreeSize(Tree *tree);
 
 /**
- * @brief Processa um único bit do arquivo de entrada para descompactação.
- *
- * @param buffer O buffer de leitura de onde os bits compactados são lidos.
- * @param bitmap O bitmap de saída onde os bytes descompactados são escritos.
- * @param huffmanTree A raiz da árvore de Huffman (usada para resetar a navegação).
- * @param tree Nó atual da leitura.
- * @return O próximo nó
+ * @brief Processa um bit da entrada compactada e avança na árvore de Huffman.
+ * @param buffer Buffer de leitura contendo os bits do arquivo compactado.
+ * @param bitmap Bitmap onde os bytes descompactados serão escritos.
+ * @param huffmanTree Raiz da árvore de Huffman (ponto de reinício da navegação).
+ * @param tree Nó atual da árvore na leitura.
+ * @return Próximo nó após processar o bit.
  */
 Tree *consumeBit(ReadBuffer *buffer, Bitmap *bitmap, Tree *huffmanTree, Tree *tree);
 
 /**
- * @brief Reconstrói a Árvore de Huffman a partir de sua representação serializada em um arquivo.
- *
- * @param buffer O buffer de leitura que contém a árvore serializada.
- * @return Um ponteiro para a raiz da Árvore de Huffman reconstruída.
+ * @brief Reconstrói a árvore de Huffman a partir da sua forma serializada.
+ * @param buffer Buffer contendo os dados da árvore serializada.
+ * @return Ponteiro para a raiz da árvore reconstruída.
  */
 Tree *createHuffmanTreeFromFile(ReadBuffer *buffer);

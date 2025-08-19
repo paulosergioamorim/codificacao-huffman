@@ -15,48 +15,43 @@
 typedef struct heap Heap;
 
 /**
- * @brief Cria e aloca uma nova Min Heap vazia.
- * @param maxCapacity A capacidade máxima de elementos que a heap poderá armazenar.
- * @return Um ponteiro para a estrutura `Heap` recém-criada, ou NULL em caso de falha.
+ * @brief Cria uma Min Heap vazia com capacidade máxima.
+ * @param maxCapacity Capacidade máxima de elementos.
+ * @return Ponteiro para a heap criada, ou NULL em caso de falha.
  */
 Heap *createHeap(int maxCapacity);
 
 /**
- * @brief Insere um nó de árvore na heap, mantendo a propriedade de min-heap.
- * @param heap A heap na qual o elemento será inserido.
- * @param tree O ponteiro para o nó da árvore a ser adicionado.
+ * @brief Insere um nó de árvore na heap.
+ * @param heap Heap de destino.
+ * @param tree Nó da árvore a ser inserido.
  */
 void pushHeap(Heap *heap, Tree *tree);
 
 /**
- * @brief Remove e retorna o elemento de menor frequência da heap (a raiz).
- * @param heap A heap da qual o elemento será removido.
- * @return Um ponteiro para o nó da árvore com a menor frequência. Retorna NULL se a heap estiver vazia.
+ * @brief Remove e retorna o nó de menor frequência da heap.
+ * @param heap Heap de onde será removido o nó.
+ * @return Ponteiro para o nó removido, ou NULL se a heap estiver vazia.
  */
 Tree *popHeap(Heap *heap);
 
 /**
- * @brief Libera a memória alocada para a estrutura da heap.
- * @warning Esta função libera a estrutura da heap e seu array interno, mas **não**
- * libera a memória dos ponteiros `Tree*` que ela contém. O gerenciamento
- * da memória dos nós da árvore é de responsabilidade externa, pois os nós
- * extraídos são usados para construir a Árvore de Huffman final.
- * @param heap A heap a ser liberada.
+ * @brief Libera a memória alocada pela heap.
+ * @param heap Heap a ser liberada.
+ * @details Os nós da árvore não são liberados.
  */
 void freeHeap(Heap *heap);
 
 /**
  * @brief Imprime o conteúdo da heap.
- * @param heap A heap a ser impressa.
+ * @param heap Heap a ser impressa.
  */
 void printHeap(Heap *heap);
 
 /**
- * @brief Constrói a Árvore de Huffman a partir de uma fila de prioridade (min-heap).
- * @param heap A min-heap contendo os nós folha (caracteres e suas frequências).
- * @warning A heap fornecida é consumida e **liberada** ao final da execução desta função.
- * O chamador não deve mais usar o ponteiro da heap após esta chamada.
- *
- * @return Um ponteiro para a raiz da Árvore de Huffman completa.
+ * @brief Constrói a Árvore de Huffman a partir dos nós da heap.
+ * @param heap Heap contendo os nós folha.
+ * @return Ponteiro para a raiz da árvore de Huffman.
+ * @details A heap é consumida e liberada ao final.
  */
 Tree *convertHeapToHuffmanTree(Heap *heap);

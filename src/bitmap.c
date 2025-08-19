@@ -35,11 +35,11 @@ void insertMSBBitmap(Bitmap *bitmap, unsigned char bit)
         exit(EXIT_FAILURE);
     }
 
-    bit &= 0x80;
+    bit &= 0x80; // máscara 0b10000000
     unsigned int indexOfByte = bitmap->size / 8;
     int indexOfBit = bitmap->size % 8;
-    bit >>= indexOfBit;
-    bitmap->vec[indexOfByte] |= bit;
+    bit >>= indexOfBit;              // posiciona o bit
+    bitmap->vec[indexOfByte] |= bit; // adiciona o bit ao byte
     bitmap->size++;
 }
 
@@ -51,13 +51,13 @@ void insertLSBBitmap(Bitmap *bitmap, unsigned char bit)
         exit(EXIT_FAILURE);
     }
 
-    bit &= 0x01;
+    bit &= 0x01; // máscara 0b00000001
     unsigned int indexOfByte = bitmap->size / 8;
     int indexOfBit = bitmap->size % 8;
     int shift = 7 - indexOfBit;
 
-    bit <<= shift;
-    bitmap->vec[indexOfByte] |= bit;
+    bit <<= shift;                   // posiciona o bit
+    bitmap->vec[indexOfByte] |= bit; // adiciona o bit ao byte
     bitmap->size++;
 }
 
@@ -118,20 +118,6 @@ unsigned char getByteBitmap(Bitmap *bitmap, unsigned int index)
         return 0;
 
     return bitmap->vec[index];
-}
-
-unsigned char getBitmap(Bitmap *bitmap, unsigned int index)
-{
-    if (index >= bitmap->size)
-        return 0;
-
-    int indexToByte = index / 8;
-    int indexToBit = index % 8;
-
-    unsigned char byte = bitmap->vec[indexToByte];
-    int shift = 7 - indexToBit;
-
-    return byte >> shift & 0x01;
 }
 
 void writeBitmap(Bitmap *bitmap, FILE *fp)

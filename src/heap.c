@@ -58,24 +58,24 @@ Tree *popHeap(Heap *heap)
 
     while (1)
     {
-        int left = 2 * i + 1;  // índice filho essquerdo de i
-        int right = 2 * i + 2; // índice filho direito de i
-        int smallest = i;      // caso: suponha que o menor seja i = 0
+        int leftIndex = 2 * i + 1;  // índice filho essquerdo de i
+        int rightIndex = 2 * i + 2; // índice filho direito de i
+        int smallestIndex = i;      // caso: suponha que o menor seja i = 0
 
-        if (left < heap->size && compareFrequencyTrees(heap->vec[smallest], heap->vec[left]))
-            smallest = left; // caso: o filho esquerdo de i na verdade é menor que i
+        if (leftIndex < heap->size && compareFrequencyTrees(heap->vec[smallestIndex], heap->vec[leftIndex]))
+            smallestIndex = leftIndex; // caso: o filho esquerdo de i na verdade é menor que i
 
-        if (right < heap->size && compareFrequencyTrees(heap->vec[smallest], heap->vec[right]))
-            smallest = right; // caso: o filho direito de i na verdade é menor que i
+        if (rightIndex < heap->size && compareFrequencyTrees(heap->vec[smallestIndex], heap->vec[rightIndex]))
+            smallestIndex = rightIndex; // caso: o filho direito de i na verdade é menor que i
 
-        if (smallest == i)
+        if (smallestIndex == i)
             break; // caso: a heap está balanceada
 
         // Agora, já sabemos os índices que devem realizar a troca
         Tree *temp = heap->vec[i];
-        heap->vec[i] = heap->vec[smallest];
-        heap->vec[smallest] = temp;
-        i = smallest; // o menor é o novo i
+        heap->vec[i] = heap->vec[smallestIndex];
+        heap->vec[smallestIndex] = temp;
+        i = smallestIndex; // o menor é o novo i
     } // balanceamento da heap
 
     return min;
