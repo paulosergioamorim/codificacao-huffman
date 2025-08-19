@@ -14,10 +14,10 @@ struct tree
     Tree *left;
     Tree *right;
     unsigned char value;
-    int frequency;
+    unsigned int frequency;
 };
 
-Tree *createTree(unsigned char value, int frequency)
+Tree *createTree(unsigned char value, unsigned int frequency)
 {
     Tree *tree = malloc(sizeof(Tree));
     assert(tree);
@@ -64,12 +64,26 @@ int getLeafNodesCountTree(Tree *tree)
     return getLeafNodesCountTree(tree->left) + getLeafNodesCountTree(tree->right);
 }
 
+int getHeightTree(Tree *tree)
+{
+    if (!tree)
+        return 0;
+
+    int leftHeight = 1 + getHeightTree(tree->left);
+    int rightHeight = 1 + getHeightTree(tree->right);
+
+    if (leftHeight >= rightHeight)
+        return leftHeight;
+
+    return rightHeight;
+}
+
 unsigned char getValueTree(Tree *tree)
 {
     return tree->value;
 }
 
-int getFrequencyTree(Tree *tree)
+unsigned int getFrequencyTree(Tree *tree)
 {
     return tree->frequency;
 }

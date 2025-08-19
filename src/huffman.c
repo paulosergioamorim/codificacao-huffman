@@ -31,8 +31,19 @@ void helper_convertHuffmanTreeToTable(Tree *tree, unsigned int *table, unsigned 
 
 unsigned int *convertHuffmanTreeToTable(Tree *tree)
 {
-    unsigned int *table = calloc(ASCII_SIZE, sizeof(unsigned int));
+    /*
+     *  Salvar a codificação num inteiro com 31 bits de código é eficiente em uso de
+     *  memória, mas causa erro se a árvore tiver uma altura maior que 31 (o que tem
+     *  uma chance extremamente pequena de acontecer e requer uma distribuição de bytes
+     *  sobremaneira desbalanceada).
+     */
+    if (getHeightTree(tree) > 31)
+    {
+        fprintf(stderr, "Árvore com altura maior que 31. Abortando.\n");
+        exit(1);
+    }
 
+    unsigned int *table = calloc(ASCII_SIZE, sizeof(unsigned int));
     helper_convertHuffmanTreeToTable(tree, table, 0x01);
 
     return table;
@@ -57,7 +68,8 @@ void serializeHuffmanTree(Tree *tree, Bitmap *bitmap)
 int getSerializedHuffmanTreeSize(Tree *tree)
 {
     int leafNodesCount = getLeafNodesCountTree(tree);
-    return leafNodesCount * 10 - 1;
+
+    return leafNodesCount * 10 - 1; // 9 * leafs + 1 * (leafs - 1)
 }
 
 Tree *consumeBit(ReadBuffer *buffer, Bitmap *bitmap, Tree *huffmanTree, Tree *tree)
@@ -72,6 +84,7 @@ Tree *consumeBit(ReadBuffer *buffer, Bitmap *bitmap, Tree *huffmanTree, Tree *tr
 
     unsigned char value = getValueTree(tree);
     insertAlignedByteBitmap(bitmap, value);
+
     return huffmanTree; // caso: decodificou um byte e retorna para a raíz da árvore
 }
 

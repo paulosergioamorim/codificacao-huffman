@@ -52,7 +52,7 @@ int main(int argc, char const *argv[])
         return 0;
     } // caso: arquivo vazio
 
-    unsigned long freqs[ASCII_SIZE] = {0};
+    unsigned int freqs[ASCII_SIZE] = {0};
 
     while (bufferHasNextByte(buffer))
     {

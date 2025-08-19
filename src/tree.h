@@ -15,7 +15,7 @@ typedef struct tree Tree;
  * @param frequency Frequência do símbolo ou soma das frequências dos filhos.
  * @return Ponteiro para o nó criado.
  */
-Tree *createTree(unsigned char value, int frequency);
+Tree *createTree(unsigned char value, unsigned int frequency);
 
 /**
  * @brief Define o filho esquerdo do nó.
@@ -60,6 +60,13 @@ int isLeafTree(Tree *tree);
 int getLeafNodesCountTree(Tree *tree);
 
 /**
+ * @brief Retorna a altura da árvore.
+ * @param tree Raiz da árvore (pode ser NULL).
+ * @return altura da árvore.
+ */
+int getHeightTree(Tree *tree);
+
+/**
  * @brief Retorna o valor armazenado no nó.
  * @param tree Nó.
  * @return Byte associado ao nó.
@@ -71,7 +78,7 @@ unsigned char getValueTree(Tree *tree);
  * @param tree Nó.
  * @return Frequência do nó.
  */
-int getFrequencyTree(Tree *tree);
+unsigned int getFrequencyTree(Tree *tree);
 
 /**
  * @brief Libera recursivamente todos os nós da árvore.
