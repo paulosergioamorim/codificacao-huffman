@@ -1,6 +1,4 @@
-.vscode
 compacta
 descompacta
-entrada*
-tests
-*.pdf
+nob
+*.comp

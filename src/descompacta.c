@@ -1,82 +1,92 @@
-/**
- * @file descompacta.c
- * @author Paulo Sérgio Amorim Mônico (@paulosergioamorim)
- * @brief Programa Descompactador
- */
-
-#include "bitmap.h"
-#include "huffman.h"
-#include "readbuffer.h"
-#include "utils.h"
-#include <assert.h>
+#include <stdint.h>
+#define NOB_IMPLEMENTATION
+#include "../nob.h"
+#include "tree.h"
+#include <fcntl.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <sys/mman.h>
 
-int main(int argc, char const *argv[])
-{
-    if (argc < 2)
-    {
-        fprintf(stderr, "Insira um arquivo para descomprimir.\n");
+void print_help();
+
+Node *node_build_from(uint8_t *buf, int *index_bytes, int *index_bits);
+
+int main(int argc, char **argv) {
+    if (argc == 1) {
+        print_help();
+        return 1;
+    }
+    const char *path = argv[1];
+    String_View ext_sv = sv_from_cstr(".comp");
+    String_View path_sv = sv_from_cstr(path);
+
+    if (!sv_ends_with(path_sv, ext_sv)) {
+        printf("Invalid format\n");
         return 1;
     }
 
-    FILE *inputFile = fopen(argv[1], "rb");
+    int fd = open(path, O_RDONLY);
 
-    if (!inputFile)
-    {
-        fprintf(stderr, "Falha ao abrir arquivo de entrada.\n");
+    if (fd == -1) {
+        printf("Failed to open file %s\n", path);
         return 1;
     }
 
-    char *outputFileName = removeExtentionFromString(argv[1]);
-    FILE *outputFile = fopen(outputFileName, "wb");
-    free(outputFileName);
-
-    if (!outputFileName)
-    {
-        fprintf(stderr, "Falha ao abrir arquivo de saída.\n");
-        fclose(inputFile);
+    struct stat st = {0};
+    if (fstat(fd, &st) == -1) {
+        printf("Failed to stat file %s\n", path);
+        close(fd);
         return 1;
     }
 
-    ReadBuffer *buffer = bufferInit(inputFile, BUFFER_SIZE);
+    uint8_t *buf = (uint8_t *)mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
-    if (!bufferHasNextByte(buffer))
-    {
-        fclose(inputFile);
-        fclose(outputFile);
-        bufferFree(buffer);
-        return 0;
-    } // caso: arquivo vazio
-
-    unsigned char lastValidBits = bufferNextAlignedByte(buffer);
-    Bitmap *bitmap = createStaticBitmap(BUFFER_SIZE);
-    Tree *huffmanTree = createHuffmanTreeFromFile(buffer);
-
-    if (bufferIsLastByte(buffer))
-        lastValidBits -= (8 - bufferGetBitsLeft(buffer)); // caso: árvore serializada consumiu bits do último byte
-
-    Tree *cur = huffmanTree;
-
-    while (lastValidBits)
-    {
-        cur = consumeBit(buffer, bitmap, huffmanTree, cur);
-
-        if (bufferIsLastByte(buffer))
-            lastValidBits--; // caso: consimiu um bit do último byte
-
-        if (!lastValidBits || isFullBitmap(bitmap))
-        {
-            writeBitmap(bitmap, outputFile);
-            clearBitmap(bitmap);
-        } // caso: escrever um bloco inteiro ou o último bloco
+    if (buf == MAP_FAILED) {
+        printf("Failed to allocate buffer\n");
+        close(fd);
+        return 1;
     }
 
-    freeTree(huffmanTree);
-    fclose(inputFile);
-    fclose(outputFile);
-    freeBitmap(bitmap);
-    bufferFree(buffer);
+    if (madvise(buf, st.st_size, MADV_HUGEPAGE) == -1) {
+        printf("Failed to use transparent huge pages\n");
+    }
+
+    int index_bytes = 1;
+    int index_bits = 0;
+    Node *huffman_tree = node_build_from(buf, &index_bytes, &index_bits);
+
+    node_display(huffman_tree);
 
     return 0;
+}
+
+void print_help() {
+    printf("./descompacta <file>");
+}
+
+Node *node_build_from(uint8_t *buf, int *index_bytes, int *index_bits) {
+    uint8_t bit = 1 & (buf[*index_bytes] >> (7 - *index_bits));
+    (*index_bits)++;
+    if (*index_bits == 7) {
+        *index_bits = 0;
+        (*index_bytes)++;
+    }
+    Node *node = malloc(sizeof(*node));
+    memset(node, 0, sizeof(*node));
+    if (bit == 0) {
+        node->left = node_build_from(buf, index_bytes, index_bits);
+        node->right = node_build_from(buf, index_bytes, index_bits);
+    } else {
+        uint8_t byte = 0;
+        for (int i = 7; i >= 0; i--) {
+            bit = 1 & (buf[*index_bytes] >> (7 - *index_bits));
+            byte |= (bit << i);
+            (*index_bits)++;
+            if (*index_bits == 7) {
+                *index_bits = 0;
+                (*index_bytes)++;
+            }
+        }
+        node->byte = byte;
+    }
+    return node;
 }
