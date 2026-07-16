@@ -16,7 +16,7 @@ void node_display(Node *node) {
         return;
     }
     node_display(node->left);
-    if (node->left == NULL && node->right == NULL) {
+    if (node_is_leaf(node)) {
         printf("%c %ld\n", node->byte, node->freq);
     }
     node_display(node->right);

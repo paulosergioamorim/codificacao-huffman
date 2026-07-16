@@ -3,7 +3,6 @@
 #include "tree.h"
 #include <assert.h>
 #include <fcntl.h>
-#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,15 +35,17 @@ typedef struct bitmap {
 
 int node_compare(const void *ptr1, const void *ptr2);
 
-void huffman_tree_parse_to_table(Node *huffman_tree, Huffman_Code *table, uint64_t code);
+void huffman_tree_parse_to_table(Node *huffman_tree, Huffman_Code *table, uint64_t code, int len);
 
-void huffman_parse_to_bitmap(Node *huffman_tree, Bitmap *bitmap);
+void huffman_table_display(Huffman_Code *table);
+
+void bitmap_append_huffman_tree(Bitmap *bitmap, Node *huffman_tree);
 
 void bitmap_append_bit(Bitmap *bitmap, uint8_t bit);
 
 void bitmap_append_byte(Bitmap *bitmap, uint8_t byte);
 
-void bitmap_append_huffman_code(Bitmap *bitmap, Huffman_Code code);
+void bitmap_append_huffman_code(Bitmap *bitmap, Huffman_Code hc);
 
 int main(int argc, char **argv) {
     if (argc == 1) {
@@ -66,7 +67,30 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    nob_log(INFO, "Loading file");
+    String_Builder sb = {0};
+    sb_append_cstr(&sb, path);
+    sb_append_cstr(&sb, ".comp");
+    sb_append_null(&sb);
+
+    int new_fd = open(sb.items, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+
+    if (new_fd == -1) {
+        printf("Failed to create new file\n");
+        perror(NULL);
+    }
+
+    if (st.st_size == 0) {
+        uint8_t count_bits = 0;
+        ssize_t bytes_written = write(new_fd, &count_bits, sizeof(count_bits));
+        if (bytes_written == -1) {
+            printf("Failed to write file\n");
+        }
+        sb_free(sb);
+        close(fd);
+        close(new_fd);
+        return 0;
+    } // empty file
+
     uint8_t *buf = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
     if (buf == MAP_FAILED) {
@@ -79,9 +103,7 @@ int main(int argc, char **argv) {
         printf("Failed to use transparent huge pages\n");
     }
 
-    nob_log(INFO, "Counting bytes frequency");
-    size_t freq[UINT8_MAX + 1];
-    memset(freq, 0, sizeof(freq));
+    off_t freq[UINT8_MAX + 1] = {0};
 
     for (off_t i = 0; i < st.st_size; i++) {
         freq[buf[i]]++;
@@ -101,7 +123,6 @@ int main(int argc, char **argv) {
         da_append(&nodes, node);
     }
 
-    nob_log(INFO, "Building huffman tree");
     while (nodes.count != 1) {
         qsort(nodes.items, nodes.count, sizeof(*nodes.items), node_compare);
         Node *node = malloc(sizeof(*node));
@@ -117,25 +138,21 @@ int main(int argc, char **argv) {
 
     Node *huffman_tree = nodes.items[0];
 
-    nob_log(INFO, "Serialize huffman tree in bitmap");
     Bitmap bitmap = {0};
-    huffman_parse_to_bitmap(huffman_tree, &bitmap);
+    bitmap_append_huffman_tree(&bitmap, huffman_tree);
 
-    nob_log(INFO, "Parse huffman tree to encoding table");
-    Huffman_Code table[UINT8_MAX + 1];
-    huffman_tree_parse_to_table(huffman_tree, table, 1);
+    Huffman_Code table[UINT8_MAX + 1] = {0};
+    huffman_tree_parse_to_table(huffman_tree, table, 0, 0);
 
-    nob_log(INFO, "Encoding file");
+    if (node_is_leaf(huffman_tree)) {
+        for (off_t i = 0; i < st.st_size; i++) {
+            bitmap_append_bit(&bitmap, 0);
+        }
+    } // unique byte
+
     for (off_t i = 0; i < st.st_size; i++) {
         Huffman_Code huffman_code = table[buf[i]];
-        // bitmap_append_huffman_code(&bitmap, huffman_code);
-        for (int j = huffman_code.len - 1; j >= 0; j--) {
-            if (huffman_code.code & (1 << j)) {
-                bitmap_append_bit(&bitmap, 1);
-            } else {
-                bitmap_append_bit(&bitmap, 0);
-            }
-        }
+        bitmap_append_huffman_code(&bitmap, huffman_code);
     }
 
     if (munmap(buf, st.st_size) == -1) {
@@ -144,19 +161,6 @@ int main(int argc, char **argv) {
 
     if (close(fd) == -1) {
         printf("Failed to close compressed file\n");
-        perror(NULL);
-    }
-
-    nob_log(INFO, "Writting encoded file");
-    String_Builder sb = {0};
-    sb_append_cstr(&sb, path);
-    sb_append_cstr(&sb, ".comp");
-    sb_append_null(&sb);
-
-    int new_fd = open(sb.items, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
-
-    if (new_fd == -1) {
-        printf("Failed to create new file\n");
         perror(NULL);
     }
 
@@ -195,22 +199,21 @@ int node_compare(const void *ptr1, const void *ptr2) {
     return node1->freq - node2->freq;
 }
 
-void huffman_tree_parse_to_table(Node *node, Huffman_Code *table, uint64_t code) {
+void huffman_tree_parse_to_table(Node *node, Huffman_Code *table, uint64_t code, int len) {
     if (!node) {
         return;
     }
-    huffman_tree_parse_to_table(node->left, table, (code << 1) | 0);
+    huffman_tree_parse_to_table(node->left, table, code << 1, len + 1);
     if (node_is_leaf(node)) {
-        Huffman_Code huffman_code = {
+        table[node->byte] = (Huffman_Code){
             .code = code,
-            .len = log2(code),
+            .len = len,
         };
-        table[node->byte] = huffman_code;
     }
-    huffman_tree_parse_to_table(node->right, table, (code << 1) | 1);
+    huffman_tree_parse_to_table(node->right, table, (code << 1) | 1, len + 1);
 }
 
-void huffman_parse_to_bitmap(Node *node, Bitmap *bitmap) {
+void bitmap_append_huffman_tree(Bitmap *bitmap, Node *node) {
     if (!node) {
         return;
     }
@@ -221,19 +224,13 @@ void huffman_parse_to_bitmap(Node *node, Bitmap *bitmap) {
 
     if (node_is_leaf(node)) {
         bitmap_append_bit(bitmap, 1);
-        for (int i = 7; i >= 0; i--) {
-            if (node->byte & (1 << i)) {
-                bitmap_append_bit(bitmap, 1);
-            } else {
-                bitmap_append_bit(bitmap, 0);
-            }
-        }
+        bitmap_append_byte(bitmap, node->byte);
         return;
     }
 
     bitmap_append_bit(bitmap, 0);
-    huffman_parse_to_bitmap(node->left, bitmap);
-    huffman_parse_to_bitmap(node->right, bitmap);
+    bitmap_append_huffman_tree(bitmap, node->left);
+    bitmap_append_huffman_tree(bitmap, node->right);
 }
 
 void bitmap_append_bit(Bitmap *bitmap, uint8_t bit) {
@@ -241,8 +238,7 @@ void bitmap_append_bit(Bitmap *bitmap, uint8_t bit) {
         bitmap->count_bits = 0;
         da_append(bitmap, 0);
     }
-    bitmap->items[bitmap->count - 1] |= (1 & bit) << (7 - bitmap->count_bits);
-    bitmap->count_bits++;
+    bitmap->items[bitmap->count - 1] |= (1 & bit) << (7 - bitmap->count_bits++);
 }
 
 void bitmap_append_byte(Bitmap *bitmap, uint8_t byte) {
@@ -253,11 +249,26 @@ void bitmap_append_byte(Bitmap *bitmap, uint8_t byte) {
 
     bitmap->items[bitmap->count - 1] |= (byte >> bitmap->count_bits);
     da_append(bitmap, 0);
-    bitmap->items[bitmap->count - 1] |= (byte << (7 - bitmap->count_bits));
+    bitmap->items[bitmap->count - 1] |= (byte << (8 - bitmap->count_bits));
 }
 
 void bitmap_append_huffman_code(Bitmap *bitmap, Huffman_Code hc) {
-    NOB_UNUSED(bitmap);
-    NOB_UNUSED(hc);
-    NOB_TODO(__FUNCTION__);
+    if (hc.len == 8) {
+        bitmap_append_byte(bitmap, hc.code);
+        return;
+    }
+    for (int i = hc.len - 1; i >= 0; i--) {
+        uint8_t bit = hc.code >> i;
+        bitmap_append_bit(bitmap, bit);
+    }
+}
+
+void huffman_table_display(Huffman_Code *table) {
+    for (int i = 0; i <= UINT8_MAX; i++) {
+        Huffman_Code hc = table[i];
+        if (hc.len == 0) {
+            continue;
+        }
+        printf("%c => 0x%x (len=%d)\n", i, hc.code, hc.len);
+    }
 }
