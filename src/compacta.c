@@ -2,7 +2,6 @@
 #include "../nob.h"
 #include "file_header.h"
 #include "node.h"
-#include <assert.h>
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -124,7 +123,10 @@ int main(int argc, char **argv) {
             continue;
         }
         Node *node = malloc(sizeof(*node));
-        assert(node);
+        if (node == NULL) {
+            nob_log(ERROR, "Failed to malloc node");
+            exit(1);
+        }
         node->byte = i;
         node->freq = freq[i];
         node->left = node->right = NULL;
@@ -135,7 +137,10 @@ int main(int argc, char **argv) {
     while (nodes.count != 1) {
         qsort(nodes.items, nodes.count, sizeof(*nodes.items), node_compare);
         Node *node = malloc(sizeof(*node));
-        assert(node);
+        if (node == NULL) {
+            nob_log(ERROR, "Failed to malloc node");
+            exit(1);
+        }
         node->byte = 0;
         node->freq = nodes.items[0]->freq + nodes.items[1]->freq;
         node->left = nodes.items[0];
@@ -153,16 +158,12 @@ int main(int argc, char **argv) {
     Huffman_Code table[UINT8_MAX + 1] = {0};
     huffman_tree_parse_to_table(huffman_tree, table, 0, 0);
 
-    if (node_is_leaf(huffman_tree)) {
-        header.is_root_leaf = true;
-        for (off_t i = 0; i < st.st_size; i++) {
-            bitmap_append_bit(&bitmap, 0);
-        }
-    } // unique byte
-
     nob_log(INFO, "Encoding file");
     for (off_t i = 0; i < st.st_size; i++) {
         Huffman_Code huffman_code = table[buf[i]];
+        if (huffman_code.len == 0) {
+            bitmap_append_bit(&bitmap, 0);
+        } // unique byte file
         bitmap_append_huffman_code(&bitmap, huffman_code);
     }
 

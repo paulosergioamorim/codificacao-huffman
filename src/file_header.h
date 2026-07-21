@@ -9,9 +9,7 @@ static const uint8_t magic_bytes[4] = {~'C', ~'O', ~'M', ~'P'};
 
 typedef struct {
     uint8_t magic_bytes[4];
-    bool is_empty_file : 1;
-    bool is_root_leaf : 1;
-    uint8_t count_last_valid_bits : 6;
+    uint8_t count_last_valid_bits;
 } File_Header;
 
 static inline bool file_header_is_valid(File_Header header) {

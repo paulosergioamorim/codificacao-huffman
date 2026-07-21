@@ -15,7 +15,8 @@ typedef struct bit_reader {
     uint8_t *buf;
     off_t size;
     int index_bytes;
-    int count_bits;
+    uint8_t count_bits;
+    uint8_t count_last_bits;
 } Bit_Reader;
 
 Node *bitreader_read_huffman_tree(Bit_Reader *br);
@@ -68,6 +69,22 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    sv_chop_suffix(&path_sv, ext_sv);
+
+    const char *new_path = temp_sv_to_cstr(path_sv);
+    FILE *fp = fopen(new_path, "w+");
+
+    if (fp == NULL) {
+        nob_log(ERROR, "Failed to create output stream");
+        close(fd);
+        return 1;
+    }
+
+    if (header.count_last_valid_bits == 0) {
+        fclose(fp);
+        return 0;
+    } // empty file
+
     uint8_t *buf = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
     if (buf == MAP_FAILED) {
@@ -83,31 +100,14 @@ int main(int argc, char **argv) {
     Bit_Reader br = {
         .buf = buf + sizeof(header),
         .size = st.st_size - sizeof(header),
+        .count_last_bits = header.count_last_valid_bits,
     };
 
-    uint8_t count_last_bits = header.count_last_valid_bits;
     Node *huffman_tree = bitreader_read_huffman_tree(&br);
     Node *node = huffman_tree;
 
-    sv_chop_suffix(&path_sv, ext_sv);
-
-    const char *new_path = temp_sv_to_cstr(path_sv);
-    FILE *fp = fopen(new_path, "w+");
-
-    if (fp == NULL) {
-        nob_log(ERROR, "Failed to create output stream");
-        munmap(buf, st.st_size);
-        close(fd);
-        node_destroy(huffman_tree);
-        return 0;
-    }
-
-    while (count_last_bits != 0) {
+    while (br.count_last_bits != 0) {
         uint8_t bit = bitreader_read_bit(&br);
-
-        if (br.index_bytes == br.size - 1) {
-            count_last_bits--;
-        }
 
         switch (bit) {
         case 0:
@@ -118,6 +118,10 @@ int main(int argc, char **argv) {
             break;
         default:
             NOB_UNREACHABLE("Invalid bit");
+        }
+
+        if (node_is_leaf(huffman_tree)) {
+            node = huffman_tree;
         }
 
         if (node_is_leaf(node)) {
@@ -154,6 +158,9 @@ uint8_t bitreader_read_bit(Bit_Reader *br) {
     }
     uint8_t byte = br->buf[br->index_bytes];
     uint8_t bit = 1 & (byte >> (7 - br->count_bits++));
+    if (br->index_bytes == br->size - 1) {
+        br->count_last_bits--;
+    }
     return bit;
 }
 
@@ -165,6 +172,9 @@ uint8_t bitreader_read_byte(Bit_Reader *br) {
 
     uint8_t byte = br->buf[br->index_bytes++] << br->count_bits;
     byte |= (br->buf[br->index_bytes] >> (8 - br->count_bits));
+    if (br->index_bytes == br->size - 1) {
+        br->count_last_bits -= br->count_bits;
+    }
     return byte;
 }
 

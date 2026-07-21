@@ -16,6 +16,7 @@ int main(int argc, char **argv) {
 #define TARGET(target_name, main_file)                                                                                 \
     nob_cc(&cmd);                                                                                                      \
     nob_cc_flags(&cmd);                                                                                                \
+    nob_cmd_append(&cmd, "-g");                                                                                        \
     nob_cc_output(&cmd, target_name);                                                                                  \
     nob_cc_inputs(&cmd, main_file, COMMON_SOURCE);                                                                     \
     nob_cmd_run(&cmd);
