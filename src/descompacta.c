@@ -2,28 +2,23 @@
 #include "../nob.h"
 #include "file_header.h"
 #include "node.h"
-#include <fcntl.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/mman.h>
 
 void print_help();
 
-typedef struct bit_reader {
-    uint8_t *buf;
-    off_t size;
-    int index_bytes;
+typedef struct {
+    FILE *input_stream;
+    off_t index_bytes;
+    off_t file_size;
+    uint8_t temp;
     uint8_t count_bits;
     uint8_t count_last_bits;
-} Bit_Reader;
+} Bitstream;
 
-Node *bitreader_read_huffman_tree(Bit_Reader *br);
+Node *bitstream_read_huffman_tree(Bitstream *bs);
 
-uint8_t bitreader_read_bit(Bit_Reader *br);
+uint8_t bitstream_read_bit(Bitstream *bs);
 
-uint8_t bitreader_read_byte(Bit_Reader *br);
+uint8_t bitstream_read_byte(Bitstream *bs);
 
 int main(int argc, char **argv) {
     if (argc == 1) {
@@ -40,74 +35,65 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    int fd = open(path, O_RDONLY);
-
-    if (fd == -1) {
-        nob_log(ERROR, "Failed to open file");
+    FILE *input_stream = fopen(path, "r");
+    if (input_stream == NULL) {
+        nob_log(ERROR, "Failed to create input file stream");
         return 1;
     }
 
     struct stat st = {0};
-    if (fstat(fd, &st) == -1) {
-        nob_log(ERROR, "Failed to stat file");
-        close(fd);
+    if (fstat(fileno(input_stream), &st) == -1) {
+        nob_log(ERROR, "Failed to stat input file");
+        fclose(input_stream);
         return 1;
     }
 
+    nob_log(INFO, "Reading header file");
     File_Header header = {0};
-    ssize_t bytes_read = read(fd, &header, sizeof(header));
-
-    if (bytes_read == -1) {
+    ssize_t items_read = fread(&header, sizeof(header), 1, input_stream);
+    if (items_read == -1) {
         nob_log(ERROR, "Failed to read header file");
-        close(fd);
+        fclose(input_stream);
         return 1;
     }
 
     if (!file_header_is_valid(header)) {
         nob_log(ERROR, "Invalid file format");
-        close(fd);
+        fclose(input_stream);
         return 1;
     }
 
     sv_chop_suffix(&path_sv, ext_sv);
-
     const char *new_path = temp_sv_to_cstr(path_sv);
-    FILE *fp = fopen(new_path, "w+");
-
-    if (fp == NULL) {
+    FILE *output_stream = fopen(new_path, "w+");
+    if (output_stream == NULL) {
         nob_log(ERROR, "Failed to create output stream");
-        close(fd);
+        fclose(input_stream);
         return 1;
     }
 
     if (header.count_last_valid_bits == 0) {
-        fclose(fp);
+        nob_log(INFO, "Closing streams");
+        fclose(input_stream);
+        fclose(output_stream);
         return 0;
     } // empty file
 
-    uint8_t *buf = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
-
-    if (buf == MAP_FAILED) {
-        nob_log(ERROR, "Failed to mmap buffer");
-        close(fd);
-        return 1;
-    }
-
-    if (madvise(buf, st.st_size, MADV_HUGEPAGE) == -1) {
-        nob_log(WARNING, "Not using transparent huge pages");
-    }
-
-    Bit_Reader br = {
-        .buf = buf + sizeof(header),
-        .size = st.st_size - sizeof(header),
+    Bitstream bs = {
+        .input_stream = input_stream,
         .count_last_bits = header.count_last_valid_bits,
+        .file_size = st.st_size,
+        .index_bytes = sizeof(header),
     };
+    fread(&bs.temp, sizeof(bs.temp), 1, input_stream);
 
-    Node *huffman_tree = bitreader_read_huffman_tree(&br);
+    nob_log(INFO, "Reading Huffman Tree");
+    Node *huffman_tree = bitstream_read_huffman_tree(&bs);
     Node *node = huffman_tree;
 
-    while (br.count_last_bits != 0) {
-        uint8_t bit = bitreader_read_bit(&br);
+    nob_log(INFO, "Decoding file");
+    while (bs.count_last_bits != 0) {
+        uint8_t bit = bitstream_read_bit(&bs);
 
         switch (bit) {
         case 0:
@@ -122,73 +108,68 @@ int main(int argc, char **argv) {
 
         if (node_is_leaf(huffman_tree)) {
             node = huffman_tree;
-        }
+        } // unique byte file
 
         if (node_is_leaf(node)) {
-            fwrite(&node->byte, sizeof(node->byte), 1, fp);
+            fwrite(&node->byte, sizeof(node->byte), 1, output_stream);
             node = huffman_tree;
         }
     }
 
-    if (munmap(buf, st.st_size) == -1) {
-        nob_log(ERROR, "Failed to munmap buffer");
-    }
-
-    if (close(fd) == -1) {
-        nob_log(ERROR, "Failed to close file");
-    }
-
     node_destroy(huffman_tree);
-
-    if (fclose(fp) == -1) {
-        nob_log(ERROR, "Failed to close output stream");
-    };
-
+    nob_log(INFO, "Closing streams");
+    fclose(input_stream);
+    fclose(output_stream);
     return 0;
 }
 
 void print_help() {
-    printf("./descompacta <file>");
+    printf("USAGE:\n"
+           "\t./descompacta <file>\n");
 }
 
-uint8_t bitreader_read_bit(Bit_Reader *br) {
-    if (br->count_bits == 8) {
-        br->count_bits = 0;
-        br->index_bytes++;
+uint8_t bitstream_read_bit(Bitstream *bs) {
+    if (bs->count_bits == 8) {
+        bs->count_bits = 0;
+        fread(&bs->temp, sizeof(bs->temp), 1, bs->input_stream);
+        bs->index_bytes++;
     }
-    uint8_t byte = br->buf[br->index_bytes];
-    uint8_t bit = 1 & (byte >> (7 - br->count_bits++));
-    if (br->index_bytes == br->size - 1) {
-        br->count_last_bits--;
+    uint8_t byte = bs->temp;
+    uint8_t bit = 1 & (byte >> (7 - bs->count_bits++));
+    if (bs->index_bytes == bs->file_size - 1) {
+        bs->count_last_bits--;
     }
     return bit;
 }
 
-uint8_t bitreader_read_byte(Bit_Reader *br) {
-    if (br->count_bits == 0) {
-        uint8_t byte = br->buf[br->index_bytes++];
+uint8_t bitstream_read_byte(Bitstream *bs) {
+    if (bs->count_bits == 0) {
+        uint8_t byte = bs->temp;
+        fread(&bs->temp, sizeof(bs->temp), 1, bs->input_stream);
+        bs->index_bytes++;
         return byte;
     }
 
-    uint8_t byte = br->buf[br->index_bytes++] << br->count_bits;
-    byte |= (br->buf[br->index_bytes] >> (8 - br->count_bits));
-    if (br->index_bytes == br->size - 1) {
-        br->count_last_bits -= br->count_bits;
+    uint8_t byte = bs->temp << bs->count_bits;
+    fread(&bs->temp, sizeof(bs->temp), 1, bs->input_stream);
+    byte |= (bs->temp >> (8 - bs->count_bits));
+    if (++bs->index_bytes == bs->file_size - 1) {
+        bs->count_last_bits -= bs->count_bits;
     }
     return byte;
 }
 
-Node *bitreader_read_huffman_tree(Bit_Reader *br) {
-    uint8_t bit = bitreader_read_bit(br);
+Node *bitstream_read_huffman_tree(Bitstream *bs) {
+    uint8_t bit = bitstream_read_bit(bs);
     Node *node = malloc(sizeof(*node));
     memset(node, 0, sizeof(*node));
 
     if (bit == 0) {
-        node->left = bitreader_read_huffman_tree(br);
-        node->right = bitreader_read_huffman_tree(br);
+        node->left = bitstream_read_huffman_tree(bs);
+        node->right = bitstream_read_huffman_tree(bs);
         return node;
     }
 
-    node->byte = bitreader_read_byte(br);
+    node->byte = bitstream_read_byte(bs);
     return node;
 }

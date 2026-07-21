@@ -2,35 +2,24 @@
 #include "../nob.h"
 #include "file_header.h"
 #include "node.h"
-#include <fcntl.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/uio.h>
-#include <unistd.h>
 
 void print_help();
 
-typedef struct nodes {
+typedef struct {
     int count;
     int capacity;
     Node **items;
 } Nodes;
 
-typedef struct huffman_code {
+typedef struct {
     uint64_t code;
     int len;
 } Huffman_Code;
 
-typedef struct bitmap {
-    int count;
-    int capacity;
+typedef struct {
+    FILE *output_stream;
+    uint8_t temp;
     uint8_t count_bits;
-    uint8_t *items;
 } Bitmap;
 
 int node_compare(const void *ptr1, const void *ptr2);
@@ -54,16 +43,11 @@ int main(int argc, char **argv) {
     }
 
     const char *path = argv[1];
-    int fd = open(path, O_RDONLY);
+    FILE *input_stream = fopen(path, "r");
+    uint8_t input_byte = 0;
 
-    if (fd == -1) {
-        nob_log(ERROR, "Failed to open file");
-        return 1;
-    }
-
-    struct stat st = {0};
-    if (fstat(fd, &st) == -1) {
-        nob_log(ERROR, "Failed to stat file");
+    if (input_stream == NULL) {
+        nob_log(ERROR, "Failed to create input file stream");
         return 1;
     }
 
@@ -74,46 +58,26 @@ int main(int argc, char **argv) {
 
     File_Header header = {0};
     memcpy(header.magic_bytes, magic_bytes, sizeof(magic_bytes));
-    int new_fd = open(sb.items, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    FILE *output_stream = fopen(sb.items, "w+");
+    sb_free(sb);
 
-    if (new_fd == -1) {
-        nob_log(ERROR, "Failed to create new file");
-        sb_free(sb);
-        close(fd);
-        return 1;
+    size_t items_written = fwrite(&header, sizeof(header), 1, output_stream);
+    if (items_written == 0) {
+        nob_log(ERROR, "Failed to write header file");
     }
 
-    if (st.st_size == 0) {
-        header.count_last_valid_bits = 0;
-        ssize_t bytes_written = write(new_fd, &header, sizeof(header));
-        if (bytes_written == -1) {
-            nob_log(ERROR, "Failed to write file");
-        }
-        sb_free(sb);
-        close(fd);
-        close(new_fd);
-        return 0;
-    } // empty file
-
-    uint8_t *buf = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
-
-    if (buf == MAP_FAILED) {
-        nob_log(ERROR, "Failed mmap buffer");
-        sb_free(sb);
-        close(fd);
-        close(new_fd);
+    if (output_stream == NULL) {
+        nob_log(ERROR, "Failed to create output file stream");
+        fclose(input_stream);
         return 1;
-    }
-
-    if (madvise(buf, st.st_size, MADV_HUGEPAGE) == -1) {
-        nob_log(WARNING, "Not using transparent huge pages");
     }
 
     off_t freq[UINT8_MAX + 1] = {0};
 
     nob_log(INFO, "Counting byte frequencies");
-    for (off_t i = 0; i < st.st_size; i++) {
-        freq[buf[i]]++;
+
+    while (fread(&input_byte, sizeof(input_byte), 1, input_stream) > 0) {
+        freq[input_byte]++;
     }
 
     Nodes nodes = {0};
@@ -123,15 +87,19 @@ int main(int argc, char **argv) {
             continue;
         }
         Node *node = malloc(sizeof(*node));
-        if (node == NULL) {
-            nob_log(ERROR, "Failed to malloc node");
-            exit(1);
-        }
+        assert(node);
         node->byte = i;
         node->freq = freq[i];
         node->left = node->right = NULL;
         da_append(&nodes, node);
     }
+
+    if (nodes.count == 0) {
+        nob_log(INFO, "Closing streams");
+        fclose(input_stream);
+        fclose(output_stream);
+        return 0;
+    } // empty file
 
     nob_log(INFO, "Building Huffman Tree");
     while (nodes.count != 1) {
@@ -151,53 +119,48 @@ int main(int argc, char **argv) {
     }
 
     Node *huffman_tree = nodes.items[0];
+    da_free(nodes);
 
-    Bitmap bitmap = {0};
+    nob_log(INFO, "Encoding file");
+    Bitmap bitmap = {.output_stream = output_stream};
     bitmap_append_huffman_tree(&bitmap, huffman_tree);
 
     Huffman_Code table[UINT8_MAX + 1] = {0};
     huffman_tree_parse_to_table(huffman_tree, table, 0, 0);
+    node_destroy(huffman_tree);
 
-    nob_log(INFO, "Encoding file");
-    for (off_t i = 0; i < st.st_size; i++) {
-        Huffman_Code huffman_code = table[buf[i]];
+    if (fseeko(input_stream, 0, SEEK_SET) == -1) {
+        nob_log(ERROR, "Failed to seek file");
+    }
+
+    while (fread(&input_byte, sizeof(input_byte), 1, input_stream) > 0) {
+        Huffman_Code huffman_code = table[input_byte];
         if (huffman_code.len == 0) {
             bitmap_append_bit(&bitmap, 0);
         } // unique byte file
         bitmap_append_huffman_code(&bitmap, huffman_code);
     }
 
-    if (munmap(buf, st.st_size) == -1) {
-        nob_log(ERROR, "Failed to munmap buffer");
-    }
-
-    if (close(fd) == -1) {
-        nob_log(ERROR, "Failed to close file");
-    }
-
     header.count_last_valid_bits = bitmap.count_bits;
-
-    nob_log(INFO, "Write new file");
-    struct iovec vec[2];
-    vec[0].iov_base = &header;
-    vec[0].iov_len = sizeof(header);
-    vec[1].iov_base = bitmap.items;
-    vec[1].iov_len = bitmap.count * sizeof(*bitmap.items);
-    ssize_t bytes_written = writev(new_fd, vec, 2);
-
-    if (bytes_written == -1) {
-        nob_log(ERROR, "Failed to write new file");
+    if (bitmap.count_bits > 0) {
+        size_t items_written = fwrite(&bitmap.temp, sizeof(bitmap.temp), 1, output_stream);
+        if (items_written == 0) {
+            nob_log(ERROR, "Failed to write file");
+        }
     }
 
-    node_destroy(huffman_tree);
-    da_free(nodes);
-    da_free(bitmap);
-    sb_free(sb);
-
-    if (close(new_fd) == -1) {
-        nob_log(ERROR, "Failed to close new file");
+    if (fseeko(output_stream, 0, SEEK_SET) == -1) {
+        nob_log(ERROR, "Failed to seek file");
     }
 
+    items_written = fwrite(&header, sizeof(header), 1, output_stream);
+    if (items_written == 0) {
+        nob_log(ERROR, "Failed to write header file");
+    }
+
+    nob_log(INFO, "Closing streams");
+    fclose(input_stream);
+    fclose(output_stream);
     return 0;
 }
 
@@ -231,10 +194,6 @@ void bitmap_append_huffman_tree(Bitmap *bitmap, Node *node) {
         return;
     }
 
-    if (bitmap->items == NULL) {
-        da_append(bitmap, 0);
-    }
-
     if (node_is_leaf(node)) {
         bitmap_append_bit(bitmap, 1);
         bitmap_append_byte(bitmap, node->byte);
@@ -249,20 +208,22 @@ void bitmap_append_huffman_tree(Bitmap *bitmap, Node *node) {
 void bitmap_append_bit(Bitmap *bitmap, uint8_t bit) {
     if (bitmap->count_bits == 8) {
         bitmap->count_bits = 0;
-        da_append(bitmap, 0);
+        fwrite(&bitmap->temp, sizeof(bitmap->temp), 1, bitmap->output_stream);
+        bitmap->temp = 0;
     }
-    bitmap->items[bitmap->count - 1] |= (1 & bit) << (7 - bitmap->count_bits++);
+    bitmap->temp |= (1 & bit) << (7 - bitmap->count_bits++);
 }
 
 void bitmap_append_byte(Bitmap *bitmap, uint8_t byte) {
     if (bitmap->count_bits == 0) {
-        da_append(bitmap, byte);
+        fwrite(&byte, sizeof(byte), 1, bitmap->output_stream);
         return;
     }
 
-    bitmap->items[bitmap->count - 1] |= (byte >> bitmap->count_bits);
-    da_append(bitmap, 0);
-    bitmap->items[bitmap->count - 1] |= (byte << (8 - bitmap->count_bits));
+    bitmap->temp |= (byte >> bitmap->count_bits);
+    fwrite(&bitmap->temp, sizeof(bitmap->temp), 1, bitmap->output_stream);
+    bitmap->temp = 0;
+    bitmap->temp |= (byte << (8 - bitmap->count_bits));
 }
 
 void bitmap_append_huffman_code(Bitmap *bitmap, Huffman_Code hc) {
