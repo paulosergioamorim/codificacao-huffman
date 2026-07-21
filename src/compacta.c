@@ -1,6 +1,7 @@
 #define NOB_IMPLEMENTATION
 #include "../nob.h"
-#include "tree.h"
+#include "file_header.h"
+#include "node.h"
 #include <assert.h>
 #include <fcntl.h>
 #include <stdint.h>
@@ -22,7 +23,7 @@ typedef struct nodes {
 } Nodes;
 
 typedef struct huffman_code {
-    uint32_t code;
+    uint64_t code;
     int len;
 } Huffman_Code;
 
@@ -50,20 +51,20 @@ void bitmap_append_huffman_code(Bitmap *bitmap, Huffman_Code hc);
 int main(int argc, char **argv) {
     if (argc == 1) {
         print_help();
-        return 1;
+        return 0;
     }
+
     const char *path = argv[1];
     int fd = open(path, O_RDONLY);
 
     if (fd == -1) {
-        printf("Failed to open file %s\n", path);
+        nob_log(ERROR, "Failed to open file");
         return 1;
     }
 
     struct stat st = {0};
     if (fstat(fd, &st) == -1) {
-        printf("Failed to stat file %s\n", path);
-        close(fd);
+        nob_log(ERROR, "Failed to stat file");
         return 1;
     }
 
@@ -72,18 +73,22 @@ int main(int argc, char **argv) {
     sb_append_cstr(&sb, ".comp");
     sb_append_null(&sb);
 
+    File_Header header = {0};
+    memcpy(header.magic_bytes, magic_bytes, sizeof(magic_bytes));
     int new_fd = open(sb.items, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
     if (new_fd == -1) {
-        printf("Failed to create new file\n");
-        perror(NULL);
+        nob_log(ERROR, "Failed to create new file");
+        sb_free(sb);
+        close(fd);
+        return 1;
     }
 
     if (st.st_size == 0) {
-        uint8_t count_bits = 0;
-        ssize_t bytes_written = write(new_fd, &count_bits, sizeof(count_bits));
+        header.count_last_valid_bits = 0;
+        ssize_t bytes_written = write(new_fd, &header, sizeof(header));
         if (bytes_written == -1) {
-            printf("Failed to write file\n");
+            nob_log(ERROR, "Failed to write file");
         }
         sb_free(sb);
         close(fd);
@@ -94,17 +99,20 @@ int main(int argc, char **argv) {
     uint8_t *buf = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
     if (buf == MAP_FAILED) {
-        printf("Failed to allocate buffer\n");
+        nob_log(ERROR, "Failed mmap buffer");
+        sb_free(sb);
         close(fd);
+        close(new_fd);
         return 1;
     }
 
     if (madvise(buf, st.st_size, MADV_HUGEPAGE) == -1) {
-        printf("Failed to use transparent huge pages\n");
+        nob_log(WARNING, "Not using transparent huge pages");
     }
 
     off_t freq[UINT8_MAX + 1] = {0};
 
+    nob_log(INFO, "Counting byte frequencies");
     for (off_t i = 0; i < st.st_size; i++) {
         freq[buf[i]]++;
     }
@@ -123,6 +131,7 @@ int main(int argc, char **argv) {
         da_append(&nodes, node);
     }
 
+    nob_log(INFO, "Building Huffman Tree");
     while (nodes.count != 1) {
         qsort(nodes.items, nodes.count, sizeof(*nodes.items), node_compare);
         Node *node = malloc(sizeof(*node));
@@ -145,35 +154,38 @@ int main(int argc, char **argv) {
     huffman_tree_parse_to_table(huffman_tree, table, 0, 0);
 
     if (node_is_leaf(huffman_tree)) {
+        header.is_root_leaf = true;
         for (off_t i = 0; i < st.st_size; i++) {
             bitmap_append_bit(&bitmap, 0);
         }
     } // unique byte
 
+    nob_log(INFO, "Encoding file");
     for (off_t i = 0; i < st.st_size; i++) {
         Huffman_Code huffman_code = table[buf[i]];
         bitmap_append_huffman_code(&bitmap, huffman_code);
     }
 
     if (munmap(buf, st.st_size) == -1) {
-        printf("Failed to munmap buffer\n");
+        nob_log(ERROR, "Failed to munmap buffer");
     }
 
     if (close(fd) == -1) {
-        printf("Failed to close compressed file\n");
-        perror(NULL);
+        nob_log(ERROR, "Failed to close file");
     }
 
+    header.count_last_valid_bits = bitmap.count_bits;
+
+    nob_log(INFO, "Write new file");
     struct iovec vec[2];
-    vec[0].iov_base = &bitmap.count_bits;
-    vec[0].iov_len = sizeof(bitmap.count_bits);
+    vec[0].iov_base = &header;
+    vec[0].iov_len = sizeof(header);
     vec[1].iov_base = bitmap.items;
-    vec[1].iov_len = bitmap.count;
+    vec[1].iov_len = bitmap.count * sizeof(*bitmap.items);
     ssize_t bytes_written = writev(new_fd, vec, 2);
 
     if (bytes_written == -1) {
-        printf("Failed to write in file\n");
-        perror(NULL);
+        nob_log(ERROR, "Failed to write new file");
     }
 
     node_destroy(huffman_tree);
@@ -182,15 +194,15 @@ int main(int argc, char **argv) {
     sb_free(sb);
 
     if (close(new_fd) == -1) {
-        printf("Failed to close compressed file\n");
-        perror(NULL);
+        nob_log(ERROR, "Failed to close new file");
     }
 
     return 0;
 }
 
 void print_help() {
-    printf("./compacta <file>\n");
+    printf("USAGE:\n"
+           "\t./compacta <file>\n");
 }
 
 int node_compare(const void *ptr1, const void *ptr2) {
@@ -253,13 +265,16 @@ void bitmap_append_byte(Bitmap *bitmap, uint8_t byte) {
 }
 
 void bitmap_append_huffman_code(Bitmap *bitmap, Huffman_Code hc) {
-    if (hc.len == 8) {
-        bitmap_append_byte(bitmap, hc.code);
-        return;
-    }
-    for (int i = hc.len - 1; i >= 0; i--) {
-        uint8_t bit = hc.code >> i;
+    int entire_bytes = hc.len / 8;
+    int rest_bits = hc.len % 8;
+    for (int i = rest_bits - 1; i >= 0; i--) {
+        uint8_t byte = hc.code >> (8 * entire_bytes);
+        uint8_t bit = byte >> i;
         bitmap_append_bit(bitmap, bit);
+    }
+    for (int i = entire_bytes - 1; i >= 0; i--) {
+        uint8_t byte = hc.code >> (8 * i);
+        bitmap_append_byte(bitmap, byte);
     }
 }
 
@@ -269,6 +284,10 @@ void huffman_table_display(Huffman_Code *table) {
         if (hc.len == 0) {
             continue;
         }
-        printf("%c => 0x%x (len=%d)\n", i, hc.code, hc.len);
+        if (isascii(i)) {
+            printf("%c => 0x%lx (len=%d)\n", i, hc.code, hc.len);
+        } else {
+            printf("0x%x => 0x%lx (len=%d)\n", i, hc.code, hc.len);
+        }
     }
 }

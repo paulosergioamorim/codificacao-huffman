@@ -1,4 +1,5 @@
-#include "tree.h"
+#include "node.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -17,7 +18,11 @@ void node_display(Node *node) {
     }
     node_display(node->left);
     if (node_is_leaf(node)) {
-        printf("%c %ld\n", node->byte, node->freq);
+        if (isascii(node->byte)) {
+            printf("%c %ld\n", node->byte, node->freq);
+        } else {
+            printf("0x%x %ld\n", node->byte, node->freq);
+        }
     }
     node_display(node->right);
 }

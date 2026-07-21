@@ -1,10 +1,12 @@
 #define NOB_IMPLEMENTATION
 #include "../nob.h"
-#include "tree.h"
+#include "file_header.h"
+#include "node.h"
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/mman.h>
 
 void print_help();
@@ -29,24 +31,39 @@ int main(int argc, char **argv) {
     }
 
     const char *path = argv[1];
-    String_View ext_sv = sv_from_cstr(".comp");
+    String_View ext_sv = SVLIT(".comp");
     String_View path_sv = sv_from_cstr(path);
 
     if (!sv_ends_with(path_sv, ext_sv)) {
-        printf("Invalid format\n");
+        nob_log(ERROR, "Invalid file name");
         return 1;
     }
 
     int fd = open(path, O_RDONLY);
 
     if (fd == -1) {
-        printf("Failed to open file %s\n", path);
+        nob_log(ERROR, "Failed to open file");
         return 1;
     }
 
     struct stat st = {0};
     if (fstat(fd, &st) == -1) {
-        printf("Failed to stat file %s\n", path);
+        nob_log(ERROR, "Failed to stat file");
+        close(fd);
+        return 1;
+    }
+
+    File_Header header = {0};
+    ssize_t bytes_read = read(fd, &header, sizeof(header));
+
+    if (bytes_read == -1) {
+        nob_log(ERROR, "Failed to read header file");
+        close(fd);
+        return 1;
+    }
+
+    if (!file_header_is_valid(header)) {
+        nob_log(ERROR, "Invalid file format");
         close(fd);
         return 1;
     }
@@ -54,21 +71,21 @@ int main(int argc, char **argv) {
     uint8_t *buf = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
     if (buf == MAP_FAILED) {
-        printf("Failed to allocate buffer\n");
+        nob_log(ERROR, "Failed to mmap buffer");
         close(fd);
         return 1;
     }
 
     if (madvise(buf, st.st_size, MADV_HUGEPAGE) == -1) {
-        printf("Failed to use transparent huge pages\n");
+        nob_log(WARNING, "Not using transparent huge pages");
     }
 
     Bit_Reader br = {
-        .buf = buf,
-        .size = st.st_size,
+        .buf = buf + sizeof(header),
+        .size = st.st_size - sizeof(header),
     };
 
-    uint8_t count_last_bits = bitreader_read_byte(&br);
+    uint8_t count_last_bits = header.count_last_valid_bits;
     Node *huffman_tree = bitreader_read_huffman_tree(&br);
     Node *node = huffman_tree;
 
@@ -78,7 +95,7 @@ int main(int argc, char **argv) {
     FILE *fp = fopen(new_path, "w+");
 
     if (fp == NULL) {
-        printf("Failed to open output file\n");
+        nob_log(ERROR, "Failed to create output stream");
         munmap(buf, st.st_size);
         close(fd);
         node_destroy(huffman_tree);
@@ -110,16 +127,19 @@ int main(int argc, char **argv) {
     }
 
     if (munmap(buf, st.st_size) == -1) {
-        printf("Failed to munmap buffer\n");
+        nob_log(ERROR, "Failed to munmap buffer");
     }
 
     if (close(fd) == -1) {
-        printf("Failed to close compressed file\n");
-        perror(NULL);
+        nob_log(ERROR, "Failed to close file");
     }
 
     node_destroy(huffman_tree);
-    fclose(fp);
+
+    if (fclose(fp) == -1) {
+        nob_log(ERROR, "Failed to close output stream");
+    };
+
     return 0;
 }
 

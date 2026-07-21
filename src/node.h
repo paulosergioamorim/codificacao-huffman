@@ -1,19 +1,17 @@
-#ifndef TREE_H
-#define TREE_H
+#ifndef NODE_H
+#define NODE_H
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
 
-typedef struct node Node;
-
-struct node {
+typedef struct node {
     uint8_t byte;
     off_t freq;
-    Node *left;
-    Node *right;
-};
+    struct node *left;
+    struct node *right;
+} Node;
 
 void node_destroy(Node *node);
 
@@ -23,4 +21,4 @@ static inline bool node_is_leaf(Node *node) {
     return node->left == NULL && node->right == NULL;
 }
 
-#endif // TREE_H
+#endif // NODE_H
