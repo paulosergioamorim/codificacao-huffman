@@ -12,7 +12,7 @@ typedef struct {
 } Nodes;
 
 typedef struct {
-    uint64_t code;
+    uint64_t bits;
     int len;
 } Huffman_Code;
 
@@ -24,9 +24,9 @@ typedef struct {
 
 int node_compare(const void *ptr1, const void *ptr2);
 
-void huffman_tree_parse_to_table(Node *huffman_tree, Huffman_Code *table, uint64_t code, int len);
+void huffman_tree_parse_to_table(const Node *huffman_tree, Huffman_Code *table, uint64_t code, int len);
 
-void huffman_table_display(Huffman_Code *table);
+void huffman_table_display(const Huffman_Code *table);
 
 void bitmap_append_huffman_tree(Bitmap *bitmap, Node *huffman_tree);
 
@@ -175,14 +175,14 @@ int node_compare(const void *ptr1, const void *ptr2) {
     return node1->freq - node2->freq;
 }
 
-void huffman_tree_parse_to_table(Node *node, Huffman_Code *table, uint64_t code, int len) {
+void huffman_tree_parse_to_table(const Node *node, Huffman_Code *table, uint64_t code, int len) {
     if (!node) {
         return;
     }
     huffman_tree_parse_to_table(node->left, table, code << 1, len + 1);
     if (node_is_leaf(node)) {
         table[node->byte] = (Huffman_Code){
-            .code = code,
+            .bits = code,
             .len = len,
         };
     }
@@ -230,26 +230,26 @@ void bitmap_append_huffman_code(Bitmap *bitmap, Huffman_Code hc) {
     int entire_bytes = hc.len / 8;
     int rest_bits = hc.len % 8;
     for (int i = rest_bits - 1; i >= 0; i--) {
-        uint8_t byte = hc.code >> (8 * entire_bytes);
+        uint8_t byte = hc.bits >> (8 * entire_bytes);
         uint8_t bit = byte >> i;
         bitmap_append_bit(bitmap, bit);
     }
     for (int i = entire_bytes - 1; i >= 0; i--) {
-        uint8_t byte = hc.code >> (8 * i);
+        uint8_t byte = hc.bits >> (8 * i);
         bitmap_append_byte(bitmap, byte);
     }
 }
 
-void huffman_table_display(Huffman_Code *table) {
+void huffman_table_display(const Huffman_Code *table) {
     for (int i = 0; i <= UINT8_MAX; i++) {
         Huffman_Code hc = table[i];
         if (hc.len == 0) {
             continue;
         }
         if (isascii(i)) {
-            printf("%c => 0x%lx (len=%d)\n", i, hc.code, hc.len);
+            printf("%c => 0x%lx (len=%d)\n", i, hc.bits, hc.len);
         } else {
-            printf("0x%x => 0x%lx (len=%d)\n", i, hc.code, hc.len);
+            printf("0x%x => 0x%lx (len=%d)\n", i, hc.bits, hc.len);
         }
     }
 }

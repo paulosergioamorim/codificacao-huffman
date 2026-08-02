@@ -12,17 +12,21 @@ void node_destroy(Node *node) {
     free(node);
 }
 
-void node_display(Node *node) {
+void node_display(const Node *node) {
     if (!node) {
         return;
     }
-    node_display(node->left);
     if (node_is_leaf(node)) {
         if (isascii(node->byte)) {
-            printf("%c %ld\n", node->byte, node->freq);
-        } else {
-            printf("0x%x %ld\n", node->byte, node->freq);
+            printf("%c", node->byte);
+            return;
         }
+        printf("0x%x", node->byte);
+        return;
     }
+    printf("<");
+    node_display(node->left);
+    printf(",");
     node_display(node->right);
+    printf(">");
 }

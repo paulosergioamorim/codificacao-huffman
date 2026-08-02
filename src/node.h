@@ -15,9 +15,9 @@ typedef struct node {
 
 void node_destroy(Node *node);
 
-void node_display(Node *node);
+void node_display(const Node *node);
 
-static inline bool node_is_leaf(Node *node) {
+static inline bool node_is_leaf(const Node *node) {
     return node->left == NULL && node->right == NULL;
 }
 
